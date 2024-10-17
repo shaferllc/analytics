@@ -3,7 +3,6 @@
 namespace ShaferLLC\Analytics\Http\View\Composers;
 
 use ShaferLLC\Analytics\Traits\DateRangeTrait;
-use ShaferLLC\Analytics\Models\Website;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 
@@ -19,15 +18,16 @@ class UserWebsitesComposer
      */
     public function compose(View $view)
     {
-        if (Auth::check()) {
-            $user = Auth::user();
-
-            $websites = $user->websites()->orderBy('domain')->get();
-
-            $view->with([
-                'websites' => $websites,
-                'range' => $this->range(),
-            ]);
+        if (!Auth::check()) {
+            return;
         }
+
+        $team = Auth::user()->currentTeam();
+        $websites = $team->websites()->orderBy('domain')->get();
+
+        $view->with([
+            'websites' => $websites,
+            'range' => $this->range(),
+        ]);
     }
 }

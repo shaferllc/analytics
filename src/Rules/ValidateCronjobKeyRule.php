@@ -2,29 +2,22 @@
 
 namespace ShaferLLC\Analytics\Rules;
 
-use Illuminate\Contracts\Validation\Rule;
+use Illuminate\Contracts\Validation\ValidationRule;
 
-class ValidateCronjobKeyRule implements Rule
+class ValidateCronjobKeyRule implements ValidationRule
 {
     /**
-     * Determine if the validation rule passes.
+     * Run the validation rule.
      *
      * @param  string  $attribute
      * @param  mixed  $value
-     * @return bool
+     * @param  \Closure  $fail
+     * @return void
      */
-    public function passes($attribute, $value)
+    public function validate($attribute, $value, $fail): void
     {
-        return $value === config('settings.cronjob_key');
-    }
-
-    /**
-     * Get the validation error message.
-     *
-     * @return string
-     */
-    public function message()
-    {
-        return __('Invalid cron job key.');
+        if ($value !== config('settings.cronjob_key')) {
+            $fail(__('Invalid cron job key.'));
+        }
     }
 }

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Stat extends Model
 {
+    protected $table = 'analytics_stats';
     /**
      * The attributes that should be cast to native types.
      *

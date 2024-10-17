@@ -138,7 +138,7 @@ trait StatTrait
         return in_array($type, ['campaigns', 'continents']) ? $type : 'referrer';
     }
 
-    private function getTotal($website, $range, $statName, $websites = null)
+    private function getTotalStats($website, $range, $statName, $websites = null)
     {
         return Stat::where('website_id', $website->id)
             ->where('name', $statName)

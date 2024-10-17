@@ -2,20 +2,14 @@
 
 namespace ShaferLLC\Analytics\Http\View\Composers;
 
-use ShaferLLC\Analytics\Models\Website;
-use ShaferLLC\Analytics\Models\Stat;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use ShaferLLC\Analytics\Models\Stat;
 
 class UserStatsComposer
 {
-    /**
-     * @var int
-     */
-    private $pageviewsCount;
-
     /**
      * Bind data to the view.
      *
@@ -24,22 +18,36 @@ class UserStatsComposer
      */
     public function compose(View $view)
     {
-        if (Auth::check()) {
-            $user = Auth::user();
-            $now = Carbon::now();
-
-            $this->pageviewsCount = Cache::remember("user_{$user->id}_pageviews_count", 60, function () use ($user, $now) {
-                return Stat::where('name', 'pageviews')
-                    ->whereIn('website_id', function ($query) use ($user) {
-                        $query->select('id')
-                              ->from('websites')
-                              ->where('user_id', $user->id);
-                    })
-                    ->whereBetween('date', [$now->startOfMonth(), $now->endOfMonth()])
-                    ->sum('count');
-            });
-
-            $view->with('pageviewsCount', $this->pageviewsCount);
+        if (!Auth::check()) {
+            return;
         }
+
+        $team = Auth::user()->currentTeam();
+        $now = Carbon::now();
+
+        $pageviewsCount = $this->getPageviewsCount($team, $now);
+
+        $view->with('pageviewsCount', $pageviewsCount);
+    }
+
+    /**
+     * Get the pageviews count for the user.
+     *
+     * @param  \App\Models\User  $user
+     * @param  Carbon  $now
+     * @return int
+     */
+    private function getPageviewsCount($team, Carbon $now)
+    {
+        return Cache::remember("user_{$team->id}_pageviews_count", 60, function () use ($team, $now) {
+            return Stat::where('name', 'pageviews')
+                ->whereIn('website_id', function ($query) use ($team) {
+                    $query->select('id')
+                          ->from('websites')
+                          ->where('team_id', $team->id);
+                })
+                ->whereBetween('date', [$now->startOfMonth(), $now->endOfMonth()])
+                ->sum('count');
+        });
     }
 }

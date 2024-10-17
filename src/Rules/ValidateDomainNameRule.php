@@ -2,9 +2,9 @@
 
 namespace ShaferLLC\Analytics\Rules;
 
-use Illuminate\Contracts\Validation\Rule;
+use Illuminate\Contracts\Validation\ValidationRule;
 
-class ValidateDomainNameRule implements Rule
+class ValidateDomainNameRule implements ValidationRule
 {
     /**
      * The regular expression pattern for validating domain names.
@@ -14,24 +14,17 @@ class ValidateDomainNameRule implements Rule
     private const DOMAIN_PATTERN = '/^(?!:\/\/)(?=.{1,255}$)((.{1,63}\.){1,127}(?![0-9]*$)[a-z0-9-]+\.?)$|^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}$/i';
 
     /**
-     * Determine if the validation rule passes.
+     * Run the validation rule.
      *
      * @param  string  $attribute
      * @param  mixed  $value
-     * @return bool
+     * @param  \Closure  $fail
+     * @return void
      */
-    public function passes($attribute, $value)
+    public function validate($attribute, $value, $fail): void
     {
-        return preg_match(self::DOMAIN_PATTERN, $value);
-    }
-
-    /**
-     * Get the validation error message.
-     *
-     * @return string
-     */
-    public function message()
-    {
-        return __('Invalid domain name.');
+        if (!preg_match(self::DOMAIN_PATTERN, $value)) {
+            $fail(__('Invalid domain name.'));
+        }
     }
 }

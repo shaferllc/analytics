@@ -10,7 +10,7 @@ use ShaferLLC\Analytics\Http\Requests\UpdateWebsiteRequest;
 use ShaferLLC\Analytics\Traits\WebsiteTrait;
 use Illuminate\Http\Request;
 
-class WebsiteController extends Controller
+class WebsiteController
 {
     use WebsiteTrait, DateRangeTrait;
 
@@ -21,7 +21,7 @@ class WebsiteController extends Controller
      */
     public function create()
     {
-        return view('websites.container', ['view' => 'new']);
+        return view('analytics::websites.create');
     }
 
     /**
@@ -31,7 +31,7 @@ class WebsiteController extends Controller
      * @param int $id
      * @return \Illuminate\View\View
      */
-    public function edit(Request $request, $id)
+    public function edit(Request $request, Website $id)
     {
         $website = $this->getUserWebsite($request->user()->id, $id);
 

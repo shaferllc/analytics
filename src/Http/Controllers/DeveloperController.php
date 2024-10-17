@@ -5,7 +5,7 @@ namespace ShaferLLC\Analytics\Http\Controllers;
 use Illuminate\Http\Request;
 use ShaferLLC\Analytics\Http\Controllers\Controller;
 
-class DeveloperController extends Controller
+class DeveloperController
 {
     /**
      * Show the Developer index page.

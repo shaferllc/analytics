@@ -2,17 +2,10 @@
 
 namespace ShaferLLC\Analytics\Rules;
 
-use Illuminate\Contracts\Validation\Rule;
+use Illuminate\Contracts\Validation\ValidationRule;
 
-class ValidateBadWordsRule implements Rule
+class ValidateBadWordsRule implements ValidationRule
 {
-    /**
-     * The input attribute
-     *
-     * @var string
-     */
-    private $attribute;
-
     /**
      * The banned words array
      *
@@ -31,33 +24,22 @@ class ValidateBadWordsRule implements Rule
     }
 
     /**
-     * Determine if the validation rule passes.
+     * Run the validation rule.
      *
      * @param  string  $attribute
      * @param  mixed  $value
-     * @return bool
+     * @param  \Closure  $fail
+     * @return void
      */
-    public function passes($attribute, $value)
+    public function validate($attribute, $value, $fail): void
     {
-        $this->attribute = $attribute;
         $lowercaseValue = mb_strtolower($value);
 
         foreach ($this->bannedWords as $word) {
             if (mb_strpos($lowercaseValue, mb_strtolower($word)) !== false) {
-                return false;
+                $fail(__('The :attribute contains a keyword that is banned.'));
+                return;
             }
         }
-
-        return true;
-    }
-
-    /**
-     * Get the validation error message.
-     *
-     * @return string
-     */
-    public function message()
-    {
-        return __('The :attribute contains a keyword that is banned.', ['attribute' => $this->attribute]);
     }
 }

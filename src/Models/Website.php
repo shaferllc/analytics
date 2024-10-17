@@ -7,23 +7,16 @@ use Illuminate\Database\Eloquent\Model;
 use ShaferLLC\Analytics\Models\User;
 use ShaferLLC\Analytics\Models\Stat;
 use ShaferLLC\Analytics\Models\Recent;
-
+use App\Models\Website as AppWebsite;
 /**
  * Class Website
  *
  * @mixin Builder
  * @package ShaferLLC\Analytics\Models
  */
-class Website extends Model
+class Website extends AppWebsite
 {
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array
-     */
-    protected $casts = [
-        'password' => 'encrypted',
-    ];
+ 
 
     /**
      * Scope a query to search for a domain.
@@ -37,15 +30,6 @@ class Website extends Model
         return $query->where('domain', 'like', "%{$value}%");
     }
 
-    /**
-     * Get the user that owns the website.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    public function user()
-    {
-        return $this->belongsTo(User::class)->withTrashed();
-    }
 
     /**
      * Scope a query to filter by user.
