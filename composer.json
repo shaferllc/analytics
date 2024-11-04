@@ -1,10 +1,12 @@
 {
     "name": "shaferllc/analytics",
-    "type": "project",
-    "description": "The Laravel Framework.",
+    "type": "library",
+    "description": "Analytics package for Laravel applications",
     "keywords": [
         "analytics",
-        "laravel"
+        "laravel",
+        "tracking",
+        "statistics"
     ],
     "license": "MIT",
     "require": {
@@ -14,9 +16,8 @@
         "spatie/laravel-package-tools": "^1.11",
         "laravel/framework": "^11.9"
     },
-
     "require-dev": {
-        "fakerphp/faker": "^1.9.1",
+        "fakerphp/faker": "^1.9.1", 
         "mockery/mockery": "^1.0",
         "phpunit/phpunit": "^10.0"
     },
@@ -46,7 +47,11 @@
     "autoload-dev": {
         "psr-4": {
             "Tests\\": "tests/"
-        }
+        },
+        "classmap": [
+            "database/seeds",
+            "database/factories"
+        ]
     },
     "minimum-stability": "dev",
     "prefer-stable": true
