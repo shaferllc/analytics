@@ -5,11 +5,11 @@
 @endphp
 
 @foreach($filters as $key => $value)
-    <div class="input-group input-group-sm mb-3 mb-md-0 {{ (__('lang_dir') == 'rtl' ? 'ml-3' : 'mr-3') }}">
-        <div class="input-group-prepend">
-            <span class="input-group-text" id="inputGroup-sizing-sm">@include('icons.' . $filterIcons[$key], ['class' => 'fill-current width-4 height-4-sm'])</span>
+    <div class="flex items-center mb-3 md:mb-0 {{ (__('lang_dir') == 'rtl' ? 'ml-3' : 'mr-3') }}">
+        <div class="flex items-center bg-gray-200 rounded-l px-2 py-1">
+            @include('icons.' . $filterIcons[$key], ['class' => 'fill-current w-4 h-4'])
         </div>
-        <input type="text" class="form-control" value="{{ $value }}" readonly>
+        <input type="text" class="border border-gray-300 rounded-r px-2 py-1 text-sm" value="{{ $value }}" readonly>
     </div>
-    <input type="hidden" class="form-control" name="{{ $key }}_id" value="{{ request()->input($key.'_id') }}">
+    <input type="hidden" name="{{ $key }}_id" value="{{ request()->input($key.'_id') }}">
 @endforeach

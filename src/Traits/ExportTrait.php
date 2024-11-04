@@ -1,12 +1,12 @@
 <?php
 
-namespace ShaferLLC\Analytics\Traits;
+namespace Shaferllc\Analytics\Traits;
 
 use Carbon\Carbon;
 use League\Csv as CSV;
 use Carbon\CarbonTimeZone;
 use Illuminate\Http\Request;
-use ShaferLLC\Analytics\Models\Website;
+use Shaferllc\Analytics\Models\Website;
 
 trait ExportTrait
 {

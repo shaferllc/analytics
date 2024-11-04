@@ -1,9 +1,9 @@
 <?php
 
-namespace ShaferLLC\Analytics\Http\Requests;
+namespace Shaferllc\Analytics\Http\Requests;
 
-use ShaferLLC\Analytics\Rules\ValidateWebsitePasswordRule;
-use ShaferLLC\Analytics\Models\Website;
+use Shaferllc\Analytics\Rules\ValidateWebsitePasswordRule;
+use Shaferllc\Analytics\Models\Website;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ValidateWebsitePasswordRequest extends FormRequest

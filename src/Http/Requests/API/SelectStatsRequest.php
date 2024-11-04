@@ -1,6 +1,6 @@
 <?php
 
-namespace ShaferLLC\Analytics\Http\Requests\API;
+namespace Shaferllc\Analytics\Http\Requests\API;
 
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;

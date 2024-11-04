@@ -1,10 +1,11 @@
-@section('menu')
+
     @php
         $menu = [
-            route('analytics') => [
+            route('analytics.index') => [
                 'title' => __('Dashboard')
             ]
         ];
+
     @endphp
 
     <div class="nav d-block text-truncate">
@@ -36,7 +37,7 @@
         <div class="nav d-block text-truncate">
             @foreach($websites as $website)
                 <li class="nav-item">
-                    <a class="nav-link d-flex px-4 @if(request()->route()->parameter('id') == $website->domain) active @endif" href="{{ route('stats.overview', ['id' => $website->domain, 'from' => $range['from'], 'to' => $range['to']]) }}">
+                    <a class="nav-link d-flex px-4 @if(request()->route()->parameter('id') == $website->domain) active @endif" href="{{ route('analytics.stats.overview', ['website' => $website, 'from' => $range['from'], 'to' => $range['to']]) }}">
                         <span class="sidebar-icon d-flex align-items-center"><img src="https://icons.duckduckgo.com/ip3/{{ $website->domain }}.ico" rel="noreferrer" class="width-4 height-4 {{ (__('lang_dir') == 'rtl' ? 'ml-3' : 'mr-3') }}"></span>
                         <span class="flex-grow-1 text-truncate" dir="ltr">{{ $website->domain }}</span>
                     </a>
@@ -44,4 +45,4 @@
             @endforeach
         </div>
     @endauth
-@endsection
+

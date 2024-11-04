@@ -1,112 +1,117 @@
 <?php
 
-namespace ShaferLLC\Analytics\Http\Controllers;
+namespace Shaferllc\Analytics\Http\Controllers;
 
-use ShaferLLC\Analytics\Http\Controllers\Controller;
-use ShaferLLC\Analytics\Traits\DateRangeTrait;
-use ShaferLLC\Analytics\Models\Website;
-use ShaferLLC\Analytics\Http\Requests\StoreWebsiteRequest;
-use ShaferLLC\Analytics\Http\Requests\UpdateWebsiteRequest;
-use ShaferLLC\Analytics\Traits\WebsiteTrait;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
+use Shaferllc\Analytics\Models\Website;
+use Shaferllc\Analytics\Traits\DateRangeTrait;
+use Shaferllc\Analytics\Rules\ValidateBadWordsRule;
+use Shaferllc\Analytics\Rules\ValidateDomainNameRule;
 
 class WebsiteController
 {
-    use WebsiteTrait, DateRangeTrait;
+    use DateRangeTrait;
 
     /**
      * Show the create Website form.
-     *
-     * @return \Illuminate\View\View
      */
-    public function create()
+    public function create(): View
     {
         return view('analytics::websites.create');
     }
 
     /**
      * Show the edit Website form.
-     *
-     * @param Request $request
-     * @param int $id
-     * @return \Illuminate\View\View
      */
-    public function edit(Request $request, Website $id)
+    public function edit(Request $request, Website $website): View
     {
-        $website = $this->getUserWebsite($request->user()->id, $id);
-
         return view('websites.container', ['view' => 'edit', 'website' => $website]);
     }
 
     /**
      * Store the Website.
-     *
-     * @param StoreWebsiteRequest $request
-     * @return \Illuminate\Http\RedirectResponse
      */
-    public function store(StoreWebsiteRequest $request)
+    public function store(Request $request): RedirectResponse
     {
-        $this->websiteStore($request);
+        $domain = preg_replace('/^(https?:\/\/)?(www\.)?/', '', mb_strtolower($request->input('domain')));
+        $request->merge(['domain' => $domain]);
+        
+        // $request->validate([
+        //    'domain' => [
+        //         'required',
+        //         'max:255',
+        //         new ValidateDomainNameRule(),
+        //         'unique:websites,domain',   
+        //         new ValidateBadWordsRule()
+        //     ],
+        //     'privacy' => ['nullable', 'integer', 'between:0,2'],
+        //     'password' => [
+        //         Rule::requiredIf(fn() => $request->input('privacy') == 2),
+        //         'nullable',
+        //         'string',
+        //         'min:1',
+        //         'max:128'
+        //     ],
+        //     'exclude_bots' => ['nullable', 'boolean'],
+        //     'exclude_params' => ['nullable', 'string'],
+        //     'exclude_ips' => ['nullable', 'string'],
+        //     'email' => ['nullable', 'integer']
+        // ]);
+        // dd($request);
+        $website = $request->user()->currentTeam()->websites()->create($request->only(['domain', 'privacy', 'password', 'exclude_bots', 'exclude_ips', 'exclude_params', 'email']));
 
-        $this->updateUserWebsiteStatus($request->user());
+        $success = __(':name has been created.', ['name' => $website->domain]);
+       
 
-        return redirect()->route('dashboard')->with('success', __(':name has been created.', ['name' => $request->input('domain')]));
+        return redirect()->route('stats.overview', $website)->with('success', $success);
     }
 
     /**
      * Update the Website.
-     *
-     * @param UpdateWebsiteRequest $request
-     * @param int $id
-     * @return \Illuminate\Http\RedirectResponse
      */
-    public function update(UpdateWebsiteRequest $request, $id)
+    public function update(Request $request, Website $website): RedirectResponse
     {
-        $website = $this->getUserWebsite($request->user()->id, $id);
 
-        $this->websiteUpdate($request, $website);
+        if (!$request->user()->currentTeam()->websites->doesntContain($website)) {
+            abort(403);
+        }
+
+        $request->validate([
+            'privacy' => ['sometimes', 'required', 'integer', Rule::in([0, 1, 2])],
+            'password' => [
+                $request->input('privacy') < 2 ? 'nullable' : 'sometimes',
+                'string',
+                'min:1',
+                'max:128'
+            ],
+            'exclude_bots' => ['sometimes', 'boolean'],
+            'exclude_ips' => ['sometimes', 'nullable', 'string'],
+            'exclude_params' => ['sometimes', 'nullable', 'string'],
+            'email' => ['sometimes', 'nullable', 'integer']
+        ]);
+      
+        $website->update($request->only($request->validated()));
 
         return back()->with('success', __('Settings saved.'));
     }
 
     /**
      * Delete the Website.
-     *
-     * @param Request $request
-     * @param int $id
-     * @return \Illuminate\Http\RedirectResponse
      */
-    public function destroy(Request $request, $id)
+    public function destroy(Request $request, Website $website): RedirectResponse
     {
-        $website = $this->getUserWebsite($request->user()->id, $id);
+
+        if (!$request->user()->currentTeam()->websites->doesntContain($website)) {
+            abort(403);
+        }
+
+        $message = __(':name has been deleted.', ['name' => $website->domain]);
 
         $website->delete();
 
-        $this->updateUserWebsiteStatus($request->user());
-
-        return redirect()->route('dashboard')->with('success', __(':name has been deleted.', ['name' => $website->domain]));
-    }
-
-    /**
-     * Get user's website or fail.
-     *
-     * @param int $userId
-     * @param int $websiteId
-     * @return Website
-     */
-    private function getUserWebsite($userId, $websiteId)
-    {
-        return Website::where('id', $websiteId)->where('user_id', $userId)->firstOrFail();
-    }
-
-    /**
-     * Update user's has_websites status.
-     *
-     * @param \App\Models\User $user
-     */
-    private function updateUserWebsiteStatus($user)
-    {
-        $user->has_websites = Website::where('user_id', $user->id)->exists();
-        $user->save();
+        return redirect()->route('analytics')->with('success', $message);
     }
 }

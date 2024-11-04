@@ -1,6 +1,6 @@
 <?php
 
-namespace ShaferLLC\Analytics\Mail;
+namespace Shaferllc\Analytics\Mail;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;

@@ -1,12 +1,12 @@
 <?php
 
-namespace ShaferLLC\Analytics\Http\View\Composers;
+namespace Shaferllc\Analytics\Http\View\Composers;
 
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
-use ShaferLLC\Analytics\Models\Stat;
+use Shaferllc\Analytics\Models\Stat;
 
 class UserStatsComposer
 {

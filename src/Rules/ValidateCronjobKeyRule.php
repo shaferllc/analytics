@@ -1,6 +1,6 @@
 <?php
 
-namespace ShaferLLC\Analytics\Rules;
+namespace Shaferllc\Analytics\Rules;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 

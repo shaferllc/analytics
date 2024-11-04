@@ -1,36 +1,28 @@
-@extends('layouts.app')
+<x-app>
+    <div class="bg-gray-100 flex items-center justify-center min-h-screen">
+        <div class="container mx-auto px-4 py-16">
+            <div class="max-w-md mx-auto">
+                <form action="{{ route('analytics.stats.password', ['website' => $website]) }}" method="post" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+                    @csrf
 
-@section('site_title', __('Website protected'))
+                    <h1 class="text-2xl mb-3 text-center font-bold">{{ __('Website protected') }}</h1>
+                    <p class="mb-5 text-center text-gray-600">{{ __('This website is password protected.') }}</p>
 
-@section('content')
-    <div class="bg-base-1 d-flex align-items-center flex-fill">
-        <div class="container py-6">
-            <div class="row h-100 justify-content-center align-items-center py-3">
-                <div class="col-lg-6">
-                    <form action="{{ route('stats.password', ['id' => $website->domain]) }}" method="post">
-                        @csrf
-
-                        <h1 class="h2 mb-3 text-center">{{ __('Website protected') }}</h1>
-                        <p class="mb-5 text-center text-muted">{{ __('This website is password protected.') }}</p>
-
-                        <div class="d-flex mb-5">
-                            <div class="flex-grow-1 {{ (__('lang_dir') == 'rtl' ? 'ml-3' : 'mr-3') }}">
-                                <input id="i-password" type="password" class="form-control{{ $errors->has('password') ? ' is-invalid' : '' }}" name="password">
-                                @if ($errors->has('password'))
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $errors->first('password') }}</strong>
-                                    </span>
-                                @endif
-                            </div>
-                            <div>
-                                <button type="submit" class="btn btn-primary">{{ __('Validate') }}</button>
-                            </div>
+                    <div class="flex mb-5">
+                        <div class="flex-grow {{ (__('lang_dir') == 'rtl' ? 'ml-3' : 'mr-3') }}">
+                            <input id="i-password" type="password" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline{{ $errors->has('password') ? ' border-red-500' : '' }}" name="password">
+                            @if ($errors->has('password'))
+                                <p class="text-red-500 text-xs italic mt-2">{{ $errors->first('password') }}</p>
+                            @endif
                         </div>
-                    </form>
-                </div>
+                        <div>
+                            <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">{{ __('Validate') }}</button>
+                        </div>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
-@endsection
 
-@include('shared.sidebars.user')
+    @include('analytics::shared.sidebars.user', ['website' => $website])
+</x-app>

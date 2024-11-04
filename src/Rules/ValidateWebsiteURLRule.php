@@ -1,23 +1,26 @@
 <?php
 
-namespace ShaferLLC\Analytics\Rules;
+namespace Shaferllc\Analytics\Rules;
 
-use ShaferLLC\Analytics\Models\Website;
-use Illuminate\Contracts\Validation\Rule;
+use Shaferllc\Analytics\Models\Website;
+use Illuminate\Contracts\Validation\ValidationRule;
 
-class ValidateWebsiteURLRule implements Rule
+class ValidateWebsiteURLRule implements ValidationRule
 {
     /**
-     * Determine if the validation rule passes.
+     * Run the validation rule.
      *
      * @param  string  $attribute
      * @param  mixed  $value
-     * @return bool
+     * @param  \Closure  $fail
+     * @return void
      */
-    public function passes($attribute, $value)
+    public function validate($attribute, $value, $fail): void
     {
         $url = $this->extractHost($value);
-        return $url !== false && !Website::where('domain', $url)->exists();
+        if ($url === false || Website::where('domain', $url)->exists()) {
+            $fail(__('This domain is already being used.'));
+        }
     }
 
     /**
@@ -31,15 +34,5 @@ class ValidateWebsiteURLRule implements Rule
         $value = str_replace('://www.', '://', $value);
         $parsedUrl = parse_url($value);
         return isset($parsedUrl['host']) ? $parsedUrl['host'] : false;
-    }
-
-    /**
-     * Get the validation error message.
-     *
-     * @return string
-     */
-    public function message()
-    {
-        return __('This domain is already being used.');
     }
 }

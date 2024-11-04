@@ -1,10 +1,10 @@
 <?php
 
-namespace ShaferLLC\Analytics\Commands;
+namespace Shaferllc\Analytics\Commands;
 
-use ShaferLLC\Analytics\Mail\ReportMail;
-use ShaferLLC\Analytics\Models\User;
-use ShaferLLC\Analytics\Models\Website;
+use Shaferllc\Analytics\Mail\ReportMail;
+use Shaferllc\Analytics\Models\User;
+use Shaferllc\Analytics\Models\Website;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;

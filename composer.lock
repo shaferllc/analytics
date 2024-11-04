@@ -7258,7 +7258,7 @@
             "time": "2022-12-17T21:53:22+00:00"
         },
         {
-            "name": "shaferllc/streamline",
+            "name": "Shaferllc/streamline",
             "version": "dev-main",
             "dist": {
                 "type": "path",
@@ -7404,7 +7404,7 @@
                 }
             ],
             "description": "This is my package streamline",
-            "homepage": "https://github.com/shaferllc/streamline",
+            "homepage": "https://github.com/Shaferllc/streamline",
             "keywords": [
                 "Tom Shafer",
                 "laravel",
@@ -7415,7 +7415,7 @@
             }
         },
         {
-            "name": "shaferllc/streamline-ui",
+            "name": "Shaferllc/streamline-ui",
             "version": "dev-master",
             "dist": {
                 "type": "path",
@@ -7453,13 +7453,13 @@
                 },
                 "laravel": {
                     "providers": [
-                        "ShaferLLC\\StreamlineUI\\StreamlineUIServiceProvider"
+                        "Shaferllc\\StreamlineUI\\StreamlineUIServiceProvider"
                     ]
                 }
             },
             "autoload": {
                 "psr-4": {
-                    "ShaferLLC\\StreamlineUI\\": "src/"
+                    "Shaferllc\\StreamlineUI\\": "src/"
                 }
             },
             "license": [
@@ -7468,7 +7468,7 @@
             "authors": [
                 {
                     "name": "Tom Shafer",
-                    "email": "tom@shaferllc.com"
+                    "email": "tom@Shaferllc.com"
                 }
             ],
             "description": "Laravel UI Components using TailwindCSS, Blade Templates and vanilla Javascript",

@@ -40,16 +40,16 @@
     "extra": {
         "laravel": {
             "providers": [
-                "ShaferLLC\\Analytics\\AnalyticsServiceProvider"
+                "Shaferllc\\Analytics\\AnalyticsServiceProvider"
             ],
             "aliases": {
-                "Analytics": "ShaferLLC\\Analytics\\Facades\\Analytics"
+                "Analytics": "Shaferllc\\Analytics\\Facades\\Analytics"
             }
         }
     },
     "autoload": {
         "psr-4": {
-            "ShaferLLC\\Analytics\\": "src/"
+            "Shaferllc\\Analytics\\": "src/"
         },
         "classmap": [
             "database/seeds",

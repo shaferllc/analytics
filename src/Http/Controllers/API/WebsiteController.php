@@ -1,12 +1,12 @@
 <?php
 
-namespace ShaferLLC\Analytics\Http\Controllers\API;
+namespace Shaferllc\Analytics\Http\Controllers\API;
 
-use ShaferLLC\Analytics\Http\Controllers\Controller;
-use ShaferLLC\Analytics\Http\Requests\API\{StoreWebsiteRequest, UpdateWebsiteRequest};
-use ShaferLLC\Analytics\Http\Resources\WebsiteResource;
-use ShaferLLC\Analytics\Models\Website;
-use ShaferLLC\Analytics\Traits\WebsiteTrait;
+use Shaferllc\Analytics\Http\Controllers\Controller;
+use Shaferllc\Analytics\Http\Requests\API\{StoreWebsiteRequest, UpdateWebsiteRequest};
+use Shaferllc\Analytics\Http\Resources\WebsiteResource;
+use Shaferllc\Analytics\Models\Website;
+use Shaferllc\Analytics\Traits\WebsiteTrait;
 use Illuminate\Http\{Request, JsonResponse, Resources\Json\AnonymousResourceCollection};
 
 class WebsiteController extends Controller

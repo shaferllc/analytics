@@ -1,118 +1,93 @@
-<div class="col">
-    <form method="GET" action="{{ route(Route::currentRouteName(), ['id' => $website->domain, 'from' => $range['from'], 'to' => $range['to']]) }}" class="d-md-flex">
-        <div class="input-group input-group-sm">
-            <input class="form-control" name="search" placeholder="{{ __('Search') }}" value="{{ app('request')->input('search') }}">
-            <div class="input-group-append">
-                <button type="button" class="btn btn-outline-primary d-flex align-items-center dropdown-toggle dropdown-toggle-split reset-after" data-tooltip="true" title="{{ __('Filters') }}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">@include('icons.filter', ['class' => 'fill-current width-4 height-4'])&#8203;</button>
-                <div class="dropdown-menu {{ (__('lang_dir') == 'rtl' ? 'dropdown-menu' : 'dropdown-menu-right') }} border-0 shadow width-64 p-0" id="search-filters">
-                    <div class="dropdown-header py-3">
-                        <div class="row">
-                            <div class="col"><div class="font-weight-medium m-0 text-body">{{ __('Filters') }}</div></div>
-                            <div class="col-auto">
-                                @if(request()->input('per_page'))
-                                    <a href="{{ route(Route::currentRouteName(), ['id' => $website->domain, 'from' => $range['from'], 'to' => $range['to']]) }}" class="text-secondary">{{ __('Reset') }}</a>
-                                @endif
-                            </div>
-                        </div>
-                    </div>
+@if($page == 'realtime')
+    <div class="bg-gradient-to-r from-blue-600 to-purple-700 text-white rounded-lg px-4 py-2 shadow-md hover:shadow-lg transition-all duration-300 w-auto inline-block">
+        <div class="flex items-center">
+            <x-icon name="heroicon-o-clock" class="w-5 h-5 animate-pulse" />
+            <span class="ml-2 font-bold text-sm">
+                {{ __('Last :seconds seconds', ['seconds' => 60]) }}
+            </span>
+        </div>
+    </div>
+@endif
 
-                    <div class="dropdown-divider my-0"></div>
-
-                    <input name="from" type="hidden" value="{{ $range['from'] }}">
-                    <input name="to" type="hidden" value="{{ $range['to'] }}">
-
-                    <div class="max-height-96 overflow-auto pt-3">
-                        <div class="form-group px-4">
-                            <label for="i-search-by" class="small">{{ __('Search by') }}</label>
-                            <select name="search_by" id="i-search-by" class="custom-select custom-select-sm">
-                                @foreach(['value' => $name] as $key => $value)
-                                    <option value="{{ $key }}" @if(request()->input('search_by') == $key || !request()->input('search_by') && $key == 'name') selected @endif>{{ $value }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="form-group px-4">
-                            <label for="i-sort-by" class="small">{{ __('Sort by') }}</label>
-                            <select name="sort_by" id="i-sort-by" class="custom-select custom-select-sm">
-                                @foreach(['count' => $count, 'value' => $name] as $key => $value)
-                                    <option value="{{ $key }}" @if(request()->input('sort_by') == $key) selected @endif>{{ $value }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="form-group px-4">
-                            <label for="i-sort" class="small">{{ __('Sort') }}</label>
-                            <select name="sort" id="i-sort" class="custom-select custom-select-sm">
-                                @foreach(['desc' => __('Descending'), 'asc' => __('Ascending')] as $key => $value)
-                                    <option value="{{ $key }}" @if(request()->input('sort') == $key) selected @endif>{{ $value }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="form-group px-4">
-                            <label for="i-per-page" class="small">{{ __('Results per page') }}</label>
-                            <select name="per_page" id="i-per-page" class="custom-select custom-select-sm">
-                                @foreach([10, 25, 50, 100] as $value)
-                                    <option value="{{ $value }}" @if(request()->input('per_page') == $value || request()->input('per_page') == null && $value == config('settings.paginate')) selected @endif>{{ $value }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="dropdown-divider my-0"></div>
-
-                    <div class="px-4 py-3">
-                        <button type="submit" class="btn btn-primary btn-sm btn-block">{{ __('Search') }}</button>
+<div class="flex flex-wrap items-center gap-4 mt-4" x-cloak> 
+    <div class="flex-grow relative">
+        <input class="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" 
+               name="search" 
+               wire:model.throttle.500ms.live="search" 
+               placeholder="{{ __('Search') }}" >
+        @if($data->isNotEmpty())
+            <div x-data="{ open: false }" class="absolute right-2 top-1/2 transform -translate-y-1/2">
+                <button @click="open = !open" class="p-1 text-gray-600 hover:text-gray-800 focus:outline-none">
+                    <x-icon name="heroicon-o-adjustments-horizontal" class="w-5 h-5" />
+                </button>
+                <div x-show="open" @click.away="open = false" class="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg z-50 border border-gray-200">
+                    <div class="p-3">
+                        @if($data->total() > 0)
+                            <a @click="$dispatch('open-modal', 'export-modal')" class="btn btn-primary flex items-center justify-center text-sm font-semibold py-1 px-3 rounded">
+                                <x-icon name="heroicon-o-arrow-down-tray" class="w-4 h-4 mr-2"/>
+                                {{ __('Export') }}
+                            </a>
+                        @endif
                     </div>
                 </div>
             </div>
-        </div>
-    </form>
+        @endif
+    </div>
+    @if($data->total() > 10)
+        <select wire:model.live="perPage" id="perPage" class="w-32 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300">
+            @foreach([10, 25, 50, 100] as $value)
+                <option value="{{ $value }}">{{ $value }} {{ __('per page') }}</option>
+            @endforeach
+        </select>
+    @endif
 </div>
-<div class="col-auto">
-    <a href="{{ route($export, ['id' => $website->domain] + Request::query()) }}" data-toggle="modal" data-target="#export-modal" class="btn btn-sm btn-outline-primary d-flex align-items-center" data-tooltip="true" title="{{ __('Export') }}">@include('icons.file-download', ['class' => 'fill-current width-4 height-4'])&#8203;</a>
-
-    <div class="modal fade" id="export-modal" tabindex="-1" role="dialog" aria-labelledby="export-modal-label" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content border-0 shadow">
-                <div class="modal-header">
-                    <h6 class="modal-title" id="export-modal-label">{{ __('Export') }}</h6>
-                    <button type="button" class="close d-flex align-items-center justify-content-center width-12 height-14" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true" class="d-flex align-items-center">@include('icons.close', ['class' => 'fill-current width-4 height-4'])</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    @if($website->user->can('dataExport', ['App\Models\User']))
-                        {{ __('Are you sure you want to export this table?') }}
-                    @else
-                        @if(paymentProcessors())
-                            @if(Auth::check() && $website->user->id == Auth::user()->id)
-                                @include('shared.features.locked')
-                            @else
-                                @include('shared.features.unavailable')
-                            @endif
-                        @else
-                            @include('shared.features.unavailable')
-                        @endif
+@if($data->isNotEmpty())
+    <div class="mt-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 p-4 rounded-lg shadow-md">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+            <div class="text-gray-700 dark:text-gray-300 font-medium">
+                {{ __('Total Results:') }} <span class="font-bold text-blue-600 dark:text-blue-400">{{ number_format($data->total()) }}</span>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                @if($search || $sortBy !== 'count' || $sort !== 'desc' || $perPage !== 10 || $from || $to)
+                    @if($search)
+                        <span class="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-800 border border-blue-300 shadow-sm">
+                            <x-icon name="heroicon-o-magnifying-glass" class="w-4 h-4 mr-1"/>
+                            {{ Str::limit($search, 15) }}
+                            <button wire:click="$set('search', '')" class="ml-1 text-blue-700 hover:text-blue-900 focus:outline-none">
+                                <x-icon name="heroicon-o-x-mark" class="w-4 h-4"/>
+                            </button>
+                        </span>
                     @endif
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Close') }}</button>
-                    @if($website->user->can('dataExport', ['App\Models\User']))
-                        <a href="{{ route($export, ['id' => $website->domain] + Request::query()) }}" target="_self" class="btn btn-primary" id="exportButton">{{ __('Export') }}</a>
+                    @if($sortBy !== 'count' || $sort !== 'desc')
+                        <span class="inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-green-800 border border-green-300 shadow-sm">
+                            <x-icon name="heroicon-o-arrow-up-down" class="w-4 h-4 mr-1"/>
+                            {{ ucfirst($sortBy) }} ({{ $sort }})
+                            <button wire:click="resetFilters" class="ml-1 text-green-700 hover:text-green-900 focus:outline-none">
+                                <x-icon name="heroicon-o-x-mark" class="w-4 h-4"/>
+                            </button>
+                        </span>
                     @endif
-                </div>
+                    @if($perPage !== 10)
+                        <span class="inline-flex items-center px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 border border-yellow-300 shadow-sm">
+                            <x-icon name="heroicon-o-list-bullet" class="w-4 h-4 mr-1"/>
+                            {{ $perPage }}/page
+                            <button wire:click="$set('perPage', 10)" class="ml-1 text-yellow-700 hover:text-yellow-900 focus:outline-none">
+                                <x-icon name="heroicon-o-x-mark" class="w-4 h-4"/>
+                            </button>
+                        </span>
+                    @endif
+                    @if($from || $to)
+                        <span class="inline-flex items-center px-3 py-1 rounded-full bg-purple-100 text-purple-800 border border-purple-300 shadow-sm">
+                            <x-icon name="heroicon-o-calendar" class="w-4 h-4 mr-1"/>
+                            {{ $from ? Carbon\Carbon::parse($from)->format('M d, Y') : '' }}
+                            -
+                            {{ $to ? Carbon\Carbon::parse($to)->format('M d, Y') : '' }}
+                        </span>
+                    @endif
+                @else
+                    <span class="text-gray-500 dark:text-gray-400 italic">{{ __('No filters applied') }}</span>
+                @endif
             </div>
         </div>
     </div>
-
-    <script>
-        'use strict';
-
-        window.addEventListener('DOMContentLoaded', function () {
-            jQuery('#exportButton').on('click', function () {
-                jQuery('#export-modal').modal('hide');
-            });
-        });
-    </script>
-</div>
+@endif

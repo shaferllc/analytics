@@ -18,7 +18,8 @@
             <div class="col-auto">
                 <div class="form-row">
                     <div class="col">
-                        @include('websites.partials.menu')
+                        
+                        @include('websites.partials.menu', ['website' => $website])
                     </div>
                 </div>
             </div>

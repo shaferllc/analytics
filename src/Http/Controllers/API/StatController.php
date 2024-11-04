@@ -1,12 +1,12 @@
 <?php
 
-namespace ShaferLLC\Analytics\Http\Controllers\API;
+namespace Shaferllc\Analytics\Http\Controllers\API;
 
-use ShaferLLC\Analytics\Http\Controllers\Controller;
-use ShaferLLC\Analytics\Http\Requests\API\SelectStatsRequest;
-use ShaferLLC\Analytics\Http\Resources\StatResource;
-use ShaferLLC\Analytics\Models\Stat;
-use ShaferLLC\Analytics\Models\Website;
+use Shaferllc\Analytics\Http\Controllers\Controller;
+use Shaferllc\Analytics\Http\Requests\API\SelectStatsRequest;
+use Shaferllc\Analytics\Http\Resources\StatResource;
+use Shaferllc\Analytics\Models\Stat;
+use Shaferllc\Analytics\Models\Website;
 use Illuminate\Http\JsonResponse;
 
 class StatController extends Controller

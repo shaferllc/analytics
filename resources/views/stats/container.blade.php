@@ -1,24 +1,30 @@
-@extends('layouts.app')
+<x-app>
+    <div class="bg-gray-100 dark:bg-gray-900 flex-grow min-h-screen">
+        <div class="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
+            <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden">
+                <div class="p-6">
+                    @include('analytics::stats.header', ['website' => $website])
+                </div>
 
-@section('head_content')
+                <div class="border-t border-gray-200 dark:border-gray-700">
+                    <div class="p-6">
+                        @include('analytics::stats.' . $view)
+                    </div>
+                </div>
 
-@endsection
-
-@section('content')
-    <script src="{{ asset('js/app.extras.js') }}" defer></script>
-    <div class="bg-base-1 flex-fill">
-        <div class="container py-3 my-3">
-            @include('stats.header')
-
-            @include('stats.' . $view)
-
-            <div class="row mt-3 small text-muted">
-                <div class="col">
-                    {{ __('Report generated on :date at :time (UTC :offset).', ['date' => \Carbon\Carbon::now()->format(__('Y-m-d')), 'time' => \Carbon\Carbon::now()->format('H:i:s'), 'offset' => \Carbon\CarbonTimeZone::create(config('app.timezone'))->toOffsetName()]) }} <a href="{{ Request::fullUrl() }}">{{ __('Refresh report') }}</a>
+                <div class="bg-gray-50 dark:bg-gray-900 px-6 py-4">
+                    <div class="text-sm text-gray-600 dark:text-gray-400">
+                        {{ __('Report generated on :date at :time (UTC :offset).', [
+                            'date' => now()->format(__('Y-m-d')),
+                            'time' => now()->format('H:i:s'),
+                            'offset' => now()->getOffsetString()
+                        ]) }}
+                        <a href="{{ Request::fullUrl() }}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 ml-2">{{ __('Refresh report') }}</a>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-@endsection
 
-@include('shared.sidebars.user')
+    @include('analytics::shared.sidebars.user', ['website' => $website])
+</x-app>

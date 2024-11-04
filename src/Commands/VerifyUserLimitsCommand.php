@@ -1,11 +1,11 @@
 <?php
 
-namespace ShaferLLC\Analytics\Commands;
+namespace Shaferllc\Analytics\Commands;
 
-use ShaferLLC\Analytics\Mail\LimitExceededMail;
-use ShaferLLC\Analytics\Models\Stat;
-use ShaferLLC\Analytics\Models\User;
-use ShaferLLC\Analytics\Models\Website;
+use Shaferllc\Analytics\Mail\LimitExceededMail;
+use Shaferllc\Analytics\Models\Stat;
+use Shaferllc\Analytics\Models\User;
+use Shaferllc\Analytics\Models\Website;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;

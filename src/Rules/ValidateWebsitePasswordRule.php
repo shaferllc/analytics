@@ -1,11 +1,11 @@
 <?php
 
-namespace ShaferLLC\Analytics\Rules;
+namespace Shaferllc\Analytics\Rules;
 
-use ShaferLLC\Analytics\Models\Website;
-use Illuminate\Contracts\Validation\Rule;
+use Shaferllc\Analytics\Models\Website;
+use Illuminate\Contracts\Validation\ValidationRule;
 
-class ValidateWebsitePasswordRule implements Rule
+class ValidateWebsitePasswordRule implements ValidationRule
 {
     /**
      * @var Website
@@ -23,24 +23,17 @@ class ValidateWebsitePasswordRule implements Rule
     }
 
     /**
-     * Determine if the validation rule passes.
+     * Run the validation rule.
      *
      * @param  string  $attribute
      * @param  mixed  $value
-     * @return bool
+     * @param  \Closure  $fail
+     * @return void
      */
-    public function passes($attribute, $value): bool
+    public function validate($attribute, $value, $fail): void
     {
-        return $this->website->password === $value;
-    }
-
-    /**
-     * Get the validation error message.
-     *
-     * @return string
-     */
-    public function message(): string
-    {
-        return __('The entered password is not correct.');
+        if ($this->website->password !== $value) {
+            $fail(__('The entered password is not correct.'));
+        }
     }
 }

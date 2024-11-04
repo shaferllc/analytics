@@ -1,13 +1,13 @@
 <?php
 
-namespace ShaferLLC\Analytics\Traits;
+namespace Shaferllc\Analytics\Traits;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use ShaferLLC\Analytics\Models\Stat;
-use ShaferLLC\Analytics\Models\Recent;
-use ShaferLLC\Analytics\Models\Website;
+use Shaferllc\Analytics\Models\Stat;
+use Shaferllc\Analytics\Models\Recent;
+use Shaferllc\Analytics\Models\Website;
 
 trait StatTrait
 {
@@ -314,4 +314,29 @@ trait StatTrait
             'www.metager.org', 'www.searx.me', 'www.peekier.com'
         ];
     }
+
+    private function getPages($website, $range, $search = null, $searchBy = null, $sortBy = null, $sort = null)
+    {
+        return Stat::selectRaw('`value`, SUM(`count`) as `count`')
+            ->where([['website_id', '=', $website->id], ['name', '=', 'page']])
+            ->when($search, function ($query) use ($search, $searchBy) {
+                return $query->searchValue($search);
+            })
+            ->whereBetween('date', [$range['from'], $range['to']])
+            ->groupBy('value')
+            ->orderBy($sortBy, $sort);
+    }
+
+    private function getReferrers($website, $range, $search = null, $searchBy = null, $sortBy = null, $sort = null)
+    {
+        return Stat::selectRaw('`value`, SUM(`count`) as `count`')
+            ->where([['website_id', '=', $website->id], ['name', '=', 'referrer'], ['value', '<>', $website->domain], ['value', '<>', '']])
+            ->when($search, function ($query) use ($search, $searchBy) {
+                return $query->searchValue($search);
+            })
+            ->whereBetween('date', [$range['from'], $range['to']])
+            ->groupBy('value')
+            ->orderBy($sortBy, $sort);
+    }
+
 }

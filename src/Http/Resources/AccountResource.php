@@ -1,6 +1,6 @@
 <?php
 
-namespace ShaferLLC\Analytics\Http\Resources;
+namespace Shaferllc\Analytics\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 

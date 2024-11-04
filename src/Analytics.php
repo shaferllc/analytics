@@ -1,5 +1,5 @@
 <?php
 
-namespace ShaferLLC\Analytics;
+namespace Shaferllc\Analytics;
 
 class Analytics {}

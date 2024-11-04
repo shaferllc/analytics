@@ -1,10 +1,10 @@
 <?php
 
-namespace ShaferLLC\Analytics\Traits;
+namespace Shaferllc\Analytics\Traits;
 
 use Illuminate\Http\Request;
-use ShaferLLC\Analytics\Models\Stat;
-use ShaferLLC\Analytics\Models\Website;
+use Shaferllc\Analytics\Models\Stat;
+use Shaferllc\Analytics\Models\Website;
 
 trait TypesTrait {
 

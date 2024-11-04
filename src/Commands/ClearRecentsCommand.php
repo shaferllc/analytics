@@ -1,8 +1,8 @@
 <?php
 
-namespace ShaferLLC\Analytics\Commands;
+namespace Shaferllc\Analytics\Commands;
 
-use ShaferLLC\Analytics\Models\Recent;
+use Shaferllc\Analytics\Models\Recent;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 

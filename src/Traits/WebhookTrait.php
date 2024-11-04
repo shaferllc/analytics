@@ -1,6 +1,6 @@
 <?php
 
-namespace ShaferLLC\Analytics\Traits;
+namespace Shaferllc\Analytics\Traits;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Client\RequestException;

@@ -1,9 +1,9 @@
 <?php
 
-namespace ShaferLLC\Analytics\Policies;
+namespace Shaferllc\Analytics\Policies;
 
-use ShaferLLC\Analytics\Models\User;
-use ShaferLLC\Analytics\Models\Website;
+use Shaferllc\Analytics\Models\User;
+use Shaferllc\Analytics\Models\Website;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Auth\Access\Response;
 

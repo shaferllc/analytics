@@ -1,8 +1,8 @@
 <?php
 
-namespace ShaferLLC\Analytics\Http\Requests;
+namespace Shaferllc\Analytics\Http\Requests;
 
-use ShaferLLC\Analytics\Rules\ValidateCronjobKeyRule;
+use Shaferllc\Analytics\Rules\ValidateCronjobKeyRule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;

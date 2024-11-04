@@ -1,6 +1,6 @@
 <?php
 
-namespace ShaferLLC\Analytics\Commands;
+namespace Shaferllc\Analytics\Commands;
 
 use Illuminate\Console\Command;
 

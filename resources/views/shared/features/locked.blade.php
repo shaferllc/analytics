@@ -1,16 +1,16 @@
-<div class="h-100 d-flex flex-column justify-content-center align-items-center my-5">
-    <div class="position-relative width-32 height-32 d-flex align-items-center justify-content-center">
-        <div class="position-absolute top-0 right-0 bottom-0 left-0 bg-primary opacity-10 rounded-circle"></div>
+<div class="h-full flex flex-col justify-center items-center my-20">
+    <div class="relative w-32 h-32 flex items-center justify-center">
+        <div class="absolute inset-0 bg-primary bg-opacity-10 rounded-full"></div>
 
-        @include('icons.lock', ['class' => 'text-primary fill-current width-16 height-16'])
+        <x-icon name="heroicon-o-lock-closed" class="w-16 h-16 text-primary"/>
     </div>
 
-    <div>
-        <h5 class="mt-4 text-center">{{ __('Feature locked') }}</h5>
-        <p class="text-center text-muted">{{ __('Upgrade your account to unlock this feature.') }}</p>
+    <div class="text-center">
+        <h5 class="mt-4 text-lg font-semibold">{{ __('Feature locked') }}</h5>
+        <p class="text-gray-600">{{ __('Upgrade your account to unlock this feature.') }}</p>
 
-        <div class="text-center mt-5">
-            <a href="{{ route('pricing') }}" class="btn btn-primary">{{ __('Upgrade') }}</a>
+        <div class="mt-5">
+            <a href="{{ route('pricing') }}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out">{{ __('Upgrade') }}</a>
         </div>
     </div>
 </div>

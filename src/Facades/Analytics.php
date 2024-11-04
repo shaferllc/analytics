@@ -1,6 +1,6 @@
 <?php
 
-namespace ShaferLLC\Analytics\Facades;
+namespace Shaferllc\Analytics\Facades;
 
 use Illuminate\Support\Facades\Facade;
 

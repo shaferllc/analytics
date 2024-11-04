@@ -1,11 +1,11 @@
 <?php
 
-namespace ShaferLLC\Analytics\Rules;
+namespace Shaferllc\Analytics\Rules;
 
-use Illuminate\Contracts\Validation\Rule;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Support\Facades\Hash;
 
-class ValidateUserPasswordRule implements Rule
+class ValidateUserPasswordRule implements ValidationRule
 {
     /**
      * The hashed password to be checked against.
@@ -25,24 +25,17 @@ class ValidateUserPasswordRule implements Rule
     }
 
     /**
-     * Determine if the validation rule passes.
+     * Run the validation rule.
      *
      * @param  string  $attribute
      * @param  mixed  $value
-     * @return bool
+     * @param  \Closure  $fail
+     * @return void
      */
-    public function passes($attribute, $value): bool
+    public function validate($attribute, $value, $fail): void
     {
-        return Hash::check($value, $this->hashedPassword);
-    }
-
-    /**
-     * Get the validation error message.
-     *
-     * @return string
-     */
-    public function message(): string
-    {
-        return __('The current password is not correct.');
+        if (!Hash::check($value, $this->hashedPassword)) {
+            $fail(__('The current password is not correct.'));
+        }
     }
 }
