@@ -12,9 +12,7 @@
         "ext-gd": "*",
         "ext-json": "*",
         "spatie/laravel-package-tools": "^1.11",
-        "laravel/framework": "^11.9",
-        "shaferllc/streamline": "*",
-        "shaferllc/streamline-ui": "*"
+        "laravel/framework": "^11.9"
     },
 
     "require-dev": {
@@ -26,16 +24,6 @@
         "optimize-autoloader": true,
         "preferred-install": "dist",
         "sort-packages": true
-    },
-    "repositories": {
-        "0": {
-            "type": "path",
-            "url": "./../streamline"
-        },
-        "1": {
-            "type": "path",
-            "url": "./../streamline-ui"
-        }
     },
     "extra": {
         "laravel": {
@@ -51,10 +39,6 @@
         "psr-4": {
             "Shaferllc\\Analytics\\": "src/"
         },
-        "classmap": [
-            "database/seeds",
-            "database/factories"
-        ],
         "files": [
             "src/helpers.php"
         ]
