@@ -8,7 +8,7 @@ use Livewire\Attributes\Computed;
 use Illuminate\Support\Facades\DB;
 use Shaferllc\Analytics\Models\Stat;
 use Shaferllc\Analytics\Models\Recent;
-use Shaferllc\Analytics\Models\Website;
+use App\Models\Website;
 
 trait ComponentTrait
 {

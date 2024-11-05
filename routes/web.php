@@ -6,20 +6,19 @@ use Shaferllc\Analytics\Http\Controllers\StatController;
 use Shaferllc\Analytics\Http\Controllers\WebsiteController;
 use Shaferllc\Analytics\Models\Website;
 
-Route::prefix('analytics')->middleware(Streamline::middleware())->name('analytics.')->group(function () {
-    Route::get('/', \Shaferllc\Analytics\Livewire\Analytics::class)->name('index');
-    Route::get('/sites/create', [WebsiteController::class, 'create'])->name('sites.create'); 
-    Route::post('/sites/create', [WebsiteController::class, 'store']);
+Route::prefix('websites/{website}/analytics')->middleware(Streamline::middleware())
+    ->name('websites.analytics.')->group(function () {
+        Route::get('/', \Shaferllc\Analytics\Livewire\Overview::class)->name('overview');
+    // Route::get('/sites/create', [WebsiteController::class, 'create'])->name('sites.create'); 
+    // Route::post('/sites/create', [WebsiteController::class, 'store']);
   
-    Route::prefix('sites/{website}')->group(function () {
+    // Route::prefix('sites/{website}')->group(function () {
 
-        Route::post('edit', [WebsiteController::class, 'update']);
-        Route::post('destroy', [WebsiteController::class, 'destroy'])->name('sites.destroy');
-        Route::get('edit', [WebsiteController::class, 'edit'])->name('sites.edit'); 
+        // Route::post('edit', [WebsiteController::class, 'update']);
+        // Route::post('destroy', [WebsiteController::class, 'destroy'])->name('sites.destroy');
+        // Route::get('edit', [WebsiteController::class, 'edit'])->name('sites.edit'); 
 
         $components = [
-            '/' => \Shaferllc\Analytics\Livewire\Overview::class,
-            'overview' => \Shaferllc\Analytics\Livewire\Overview::class,
             'realtime' => \Shaferllc\Analytics\Livewire\Realtime::class,
             'events' => \Shaferllc\Analytics\Livewire\Events::class,
             'browsers' => \Shaferllc\Analytics\Livewire\Browsers::class,
@@ -43,9 +42,9 @@ Route::prefix('analytics')->middleware(Streamline::middleware())->name('analytic
             
         ];
         foreach ($components as $name => $class) {
-            Route::get("/{$name}", $class)->name("stats.{$name}");
+            Route::get("/{$name}", $class)->name($name);
         }
 
-        Route::post('/password', [StatController::class, 'validatePassword'])->name('stats.password');
-    });
+        // Route::post('/password', [StatController::class, 'validatePassword'])->name('stats.password');
+    // });
 })->scopeBindings();

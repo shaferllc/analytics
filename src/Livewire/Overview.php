@@ -10,14 +10,14 @@ use Livewire\Attributes\Layout;
 use Illuminate\Contracts\View\View;
 use Shaferllc\Analytics\Models\Stat;
 use Illuminate\Support\Facades\Cache;
-use Shaferllc\Analytics\Models\Website;
+use App\Models\Website;
 use Shaferllc\Analytics\Traits\ComponentTrait;
 use Shaferllc\Analytics\Traits\DateRangeTrait;
 
 /**
- * Class AnalyticsController
+ * Class Overview
  * 
- * This controller handles analytics-related operations and data retrieval.
+ * This component handles analytics data display and retrieval.
  */
 class Overview extends Component
 {
@@ -25,6 +25,7 @@ class Overview extends Component
 
     public Team $currentTeam;
     public Website $website;
+
     public function mount(Website $website)
     {
         $this->website = $website;
@@ -33,13 +34,13 @@ class Overview extends Component
     }
   
     /**
-     * Retrieve and compile statistics data for the given team and date range.
+     * Retrieve and compile statistics data for display.
+     *
+     * @return \Illuminate\Contracts\View\View
      */
-    #[Layout('analytics::layouts.app')]
-    public function render()
+    public function render(): View
     {
         $now = now();
-
 
         $pages = Arr::get($this->query(
             type: 'page', 
@@ -81,7 +82,6 @@ class Overview extends Component
             paginate: false
         ), 'data')->count();
 
-
         $totalPageviews = Arr::get($this->query(
             type: 'pageviews', 
             limit: null,
@@ -89,7 +89,6 @@ class Overview extends Component
             to: $this->range['to'],
             paginate: false
         ), 'data')->sum('count');
-
 
         $totalReferrers = Arr::get($this->query(
             type: 'referrer', 
@@ -139,11 +138,9 @@ class Overview extends Component
             paginate: false
         ), 'data');
 
-        $pageviewsMap = $this->getStats($this->website, $this->range, 'pageviews'); 
-        
+        $pageviewsMap = $this->getStats($this->website, $this->range, 'pageviews');
         $visitorsMap = $this->getStats($this->website, $this->range, 'visitors');
 
-    
         return view('analytics::livewire.overview', [
             'website' => $this->website,
             'range' => $this->range,

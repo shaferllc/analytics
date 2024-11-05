@@ -87,41 +87,41 @@
                                                 'icon' => 'heroicon-o-globe-alt',
                                                 'label' => __('Behavior'),
                                                 'submenu' => [
-                                                    ['label' => __('Pages'), 'route' => 'analytics.stats.pages', 'website' => $website],
-                                                    ['label' => __('Landing pages'), 'route' => 'analytics.stats.landing_pages']
+                                                    ['label' => __('Pages'), 'route' => 'websites.analytics.pages', 'website' => $website],
+                                                    ['label' => __('Landing pages'), 'route' => 'websites.analytics.landing_pages']
                                                 ]
                                             ],
                                             'acquisitions' => [
                                                 'icon' => 'heroicon-o-globe-alt',
                                                 'label' => __('Acquisitions'),
                                                 'submenu' => [
-                                                    ['label' => __('Referrers'), 'route' => 'analytics.stats.referrers'],
-                                                    ['label' => __('Search engines'), 'route' => 'analytics.stats.search_engines'],
-                                                    ['label' => __('Social networks'), 'route' => 'analytics.stats.social_networks'],
-                                                    ['label' => __('Campaigns'), 'route' => 'analytics.stats.campaigns']
+                                                    ['label' => __('Referrers'), 'route' => 'websites.analytics.referrers'],
+                                                    ['label' => __('Search engines'), 'route' => 'websites.analytics.search_engines'],
+                                                    ['label' => __('Social networks'), 'route' => 'websites.analytics.social_networks'],
+                                                    ['label' => __('Campaigns'), 'route' => 'websites.analytics.campaigns']
                                                 ]
                                             ],
                                             'geographic' => [
                                                 'icon' => 'heroicon-o-globe-alt',
                                                 'label' => __('Geographic'),
                                                 'submenu' => [
-                                                    ['label' => __('Continents'), 'route' => 'analytics.stats.continents'],
-                                                    ['label' => __('Countries'), 'route' => 'analytics.stats.countries'],
-                                                    ['label' => __('Cities'), 'route' => 'analytics.stats.cities'],
-                                                    ['label' => __('Languages'), 'route' => 'analytics.stats.languages']
+                                                    ['label' => __('Continents'), 'route' => 'websites.analytics.continents'],
+                                                    ['label' => __('Countries'), 'route' => 'websites.analytics.countries'],
+                                                    ['label' => __('Cities'), 'route' => 'websites.analytics.cities'],
+                                                    ['label' => __('Languages'), 'route' => 'websites.analytics.languages']
                                                 ]
                                             ],
                                             'technology' => [
                                                 'icon' => 'heroicon-o-globe-alt',
                                                 'label' => __('Technology'),
                                                 'submenu' => [
-                                                    ['label' => __('Operating systems'), 'route' => 'analytics.stats.operating_systems'],
-                                                    ['label' => __('Browsers'), 'route' => 'analytics.stats.browsers'],
-                                                    ['label' => __('Screen resolutions'), 'route' => 'analytics.stats.screen_resolutions'],
-                                                    ['label' => __('Devices'), 'route' => 'analytics.stats.devices']
+                                                    ['label' => __('Operating systems'), 'route' => 'websites.analytics.operating_systems'],
+                                                    ['label' => __('Browsers'), 'route' => 'websites.analytics.browsers'],
+                                                    ['label' => __('Screen resolutions'), 'route' => 'websites.analytics.screen_resolutions'],
+                                                    ['label' => __('Devices'), 'route' => 'websites.analytics.devices']
                                                 ]
                                             ],
-                                            'events' => ['icon' => 'heroicon-o-globe-alt', 'label' => __('Events'), 'route' => 'analytics.stats.events']
+                                            'events' => ['icon' => 'heroicon-o-globe-alt', 'label' => __('Events'), 'route' => 'websites.analytics.events']
                                         ];
                                     @endphp
 

@@ -1,7 +1,8 @@
 
     @php
         $menu = [
-            route('analytics.index') => [
+            route('websites.analytics.index', ['website' => $website]) => [
+                
                 'title' => __('Dashboard')
             ]
         ];
