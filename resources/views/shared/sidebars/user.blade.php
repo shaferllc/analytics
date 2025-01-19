@@ -1,8 +1,8 @@
 
     @php
         $menu = [
-            route('websites.analytics.index', ['website' => $website]) => [
-                
+            route('websites.analytics.index', ['website' => $site]) => [
+
                 'title' => __('Dashboard')
             ]
         ];
@@ -36,11 +36,11 @@
 
     @auth
         <div class="nav d-block text-truncate">
-            @foreach($websites as $website)
+            @foreach($sites as $site)
                 <li class="nav-item">
-                    <a class="nav-link d-flex px-4 @if(request()->route()->parameter('id') == $website->domain) active @endif" href="{{ route('analytics.stats.overview', ['website' => $website, 'from' => $range['from'], 'to' => $range['to']]) }}">
-                        <span class="sidebar-icon d-flex align-items-center"><img src="https://icons.duckduckgo.com/ip3/{{ $website->domain }}.ico" rel="noreferrer" class="width-4 height-4 {{ (__('lang_dir') == 'rtl' ? 'ml-3' : 'mr-3') }}"></span>
-                        <span class="flex-grow-1 text-truncate" dir="ltr">{{ $website->domain }}</span>
+                    <a class="nav-link d-flex px-4 @if(request()->route()->parameter('id') == $site->domain) active @endif" href="{{ route('analytics.stats.overview', ['website' => $site, 'from' => $range['from'], 'to' => $range['to']]) }}">
+                        <span class="sidebar-icon d-flex align-items-center"><img src="https://icons.duckduckgo.com/ip3/{{ $site->domain }}.ico" rel="noreferrer" class="width-4 height-4 {{ (__('lang_dir') == 'rtl' ? 'ml-3' : 'mr-3') }}"></span>
+                        <span class="flex-grow-1 text-truncate" dir="ltr">{{ $site->domain }}</span>
                     </a>
                 </li>
             @endforeach

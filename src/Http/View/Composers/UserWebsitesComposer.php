@@ -22,10 +22,10 @@ class UserWebsitesComposer
         if (Auth::check()) {
             $team = Auth::user()->currentTeam();
 
-            $websites = $team->websites()->orderBy('domain')->get();
+            $sites = $team->websites()->orderBy('domain')->get();
 
             $view->with([
-                'websites' => $websites,
+                'websites' => $sites,
                 'range' => $this->range(),
             ]);
         }

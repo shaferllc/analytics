@@ -19,11 +19,11 @@
 <th style="text-align: {{ (__('lang_dir') == 'rtl' ? 'left' : 'right') }}; width: 30%;">{{ __('Visitors') }}</th>
 <th style="text-align: {{ (__('lang_dir') == 'rtl' ? 'left' : 'right') }}; width: 30%;">{{ __('Pageviews') }}</th>
 </tr>
-@foreach($stats as $website)
+@foreach($stats as $site)
 <tr>
-<td style="text-align: {{ (__('lang_dir') == 'rtl' ? 'right' : 'left') }}; width: 40%; color: #262626;"><a href="{{ route('stats.overview', ['id' => $website['domain'], 'from' => $range['from'], 'to' => $range['to']]) }}">{{ $website['domain'] }}</a></td>
-<td style="text-align: {{ (__('lang_dir') == 'rtl' ? 'left' : 'right') }}; width: 30%; color: #3383ff;">{{ number_format($website['visitors'], 0, __('.'), __(',')) }}</td>
-<td style="text-align: {{ (__('lang_dir') == 'rtl' ? 'left' : 'right') }}; width: 30%; color: #DC3545;">{{ number_format($website['pageviews'], 0, __('.'), __(',')) }}</td>
+<td style="text-align: {{ (__('lang_dir') == 'rtl' ? 'right' : 'left') }}; width: 40%; color: #262626;"><a href="{{ route('stats.overview', ['id' => $site['domain'], 'from' => $range['from'], 'to' => $range['to']]) }}">{{ $site['domain'] }}</a></td>
+<td style="text-align: {{ (__('lang_dir') == 'rtl' ? 'left' : 'right') }}; width: 30%; color: #3383ff;">{{ number_format($site['visitors'], 0, __('.'), __(',')) }}</td>
+<td style="text-align: {{ (__('lang_dir') == 'rtl' ? 'left' : 'right') }}; width: 30%; color: #DC3545;">{{ number_format($site['pageviews'], 0, __('.'), __(',')) }}</td>
 </tr>
 @endforeach
 <tr>

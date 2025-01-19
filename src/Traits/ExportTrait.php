@@ -12,10 +12,10 @@ trait ExportTrait
 {
     private function exportGeneric(Request $request, $id, $title, $nameColumn, $countColumn, $dataMethod)
     {
-        $website = Website::where('domain', $id)->firstOrFail();
+        $site = Website::where('domain', $id)->firstOrFail();
 
-        if ($this->statsGuard($website)) {
-            return view('stats.password', ['website' => $website]);
+        if ($this->statsGuard($site)) {
+            return view('stats.password', ['website' => $site]);
         }
 
         $range = $this->range();
@@ -24,7 +24,7 @@ trait ExportTrait
         $sortBy = in_array($request->input('sort_by'), ['count', 'value']) ? $request->input('sort_by') : 'count';
         $sort = in_array($request->input('sort'), ['asc', 'desc']) ? $request->input('sort') : 'desc';
 
-        return $this->exportCSV($request, $website, $title, $range, $nameColumn, $countColumn, $this->$dataMethod($website, $range, $search, $searchBy, $sortBy, $sort)->get());
+        return $this->exportCSV($request, $site, $title, $range, $nameColumn, $countColumn, $this->$dataMethod($site, $range, $search, $searchBy, $sortBy, $sort)->get());
     }
 
     public function exportPages(Request $request, $id)
@@ -102,16 +102,16 @@ trait ExportTrait
         return $this->exportGeneric($request, $id, __('Events'), __('Name'), __('Completions'), 'getEvents');
     }
 
-    private function exportCSV($request, $website, $title, $range, $name, $count, $results)
+    private function exportCSV($request, $site, $title, $range, $name, $count, $results)
     {
-        if ($website->user->cannot('dataExport', ['App\Models\User'])) {
+        if ($site->user->cannot('dataExport', ['App\Models\User'])) {
             abort(403);
         }
 
         $content = CSV\Writer::createFromFileObject(new \SplTempFileObject);
 
         $headerData = [
-            [__('Website'), $website->domain],
+            [__('Website'), $site->domain],
             [__('Type'), $title],
             [__('Interval'), $range['from'] . ' - ' . $range['to']],
             [__('Date'), Carbon::now()->format(__('Y-m-d H:i:s')) . ' (' . CarbonTimeZone::create(config('app.timezone'))->toOffsetName() . ')'],
@@ -121,8 +121,8 @@ trait ExportTrait
         $content->insertAll($headerData);
 
         $summaryData = [
-            [__('Visitors'), $this->getSumForStat($website->id, 'visitors', $range)],
-            [__('Pageviews'), $this->getSumForStat($website->id, 'pageviews', $range)],
+            [__('Visitors'), $this->getSumForStat($site->id, 'visitors', $range)],
+            [__('Pageviews'), $this->getSumForStat($site->id, 'pageviews', $range)],
             [__(' ')]
         ];
         $content->insertAll($summaryData);
@@ -133,7 +133,7 @@ trait ExportTrait
         return response((string) $content, 200, [
             'Content-Type' => 'text/csv',
             'Content-Transfer-Encoding' => 'binary',
-            'Content-Disposition' => 'attachment; filename="' . formatTitle([$website->domain, $title, $range['from'], $range['to'], config('settings.title')]) . '.csv"'
+            'Content-Disposition' => 'attachment; filename="' . formatTitle([$site->domain, $title, $range['from'], $range['to'], config('settings.title')]) . '.csv"'
         ]);
     }
 }

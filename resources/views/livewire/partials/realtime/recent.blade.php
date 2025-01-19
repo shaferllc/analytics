@@ -13,7 +13,7 @@
                         </h2>
                         @if($isPaused)
                             <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                {{ __('Paused at') }}: {{ now($website->timezone)->format('M j, Y g:i:s A T') }}
+                                {{ __('Paused at') }}: {{ now($site->timezone)->format('M j, Y g:i:s A T') }}
                             </div>
                         @endif
                     </div>
@@ -27,7 +27,7 @@
                             <span>{{ $groupSimilarPages ? __('Ungroup Pages') : __('Group Similar') }}</span>
                         </div>
                     </button>
-                    <button type="button" 
+                    <button type="button"
                         wire:click="togglePause"
                         class="px-5 py-2.5 text-sm font-semibold bg-gradient-to-r from-indigo-400 to-purple-400 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 ease-in-out">
                         <div class="flex items-center space-x-2">
@@ -76,7 +76,7 @@
                                 </div>
                                 <div class="flex items-center gap-3 mb-3">
                                     <div class="bg-gradient-to-br from-red-100 via-red-50 to-red-100 dark:from-red-900/40 dark:via-red-900/30 dark:to-red-900/20 p-2 rounded-lg">
-                                        <img src="https://www.google.com/s2/favicons?domain={{ $website->domain }}" 
+                                        <img src="https://www.google.com/s2/favicons?domain={{ $site->domain }}"
                                             class="w-5 h-5"
                                             alt="Site favicon">
                                     </div>
@@ -95,8 +95,8 @@
                                             <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">{{ __('Countries') }}:</div>
                                             <div class="flex flex-wrap gap-2">
                                                 @foreach($pageviews->unique('country')->pluck('country')->filter() as $country)
-                                                    <img src="{{ asset('/vendor/analytics/icons/countries/' . formatFlag($country)) }}.svg" 
-                                                        class="w-6 h-6" 
+                                                    <img src="{{ asset('/vendor/analytics/icons/countries/' . formatFlag($country)) }}.svg"
+                                                        class="w-6 h-6"
                                                         title="{{ $country }}"
                                                         alt="{{ $country }} flag">
                                                 @endforeach
@@ -134,31 +134,31 @@
                         <div class="flex items-start justify-between cursor-pointer hover:bg-gray-50/80 dark:hover:bg-gray-800/70 transition-all duration-300 rounded-lg p-3 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl backdrop-blur-sm">
                             <div class="flex items-start gap-4 flex-1">
                                 <div class="bg-gradient-to-br from-red-100 via-red-50 to-red-100 dark:from-red-900/40 dark:via-red-900/30 dark:to-red-900/20 p-3 rounded-lg shadow-lg animate-pulse">
-                                    <img src="https://www.google.com/s2/favicons?domain={{ $website->domain }}" 
+                                    <img src="https://www.google.com/s2/favicons?domain={{ $site->domain }}"
                                         class="w-6 h-6 transform hover:rotate-12 transition-transform"
                                         onerror="this.onerror=null; this.src='https://cdn.jsdelivr.net/npm/heroicons/24/outline/globe.svg'"
                                         alt="Site favicon">
                                 </div>
                                 <div class="flex-1 min-w-0">
                                     <div class="flex items-center gap-3">
-                                        <span class="font-semibold text-gray-900 dark:text-white text-lg bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent truncate hover:whitespace-normal hover:text-clip" 
-                                            title="{{ $website->domain . $pageview->page }}">
+                                        <span class="font-semibold text-gray-900 dark:text-white text-lg bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent truncate hover:whitespace-normal hover:text-clip"
+                                            title="{{ $site->domain . $pageview->page }}">
                                             {{ Str::limit($pageview->page_title ?: $pageview->page, 200) }}
                                         </span>
-                                        <a href="{{ $website->domain . $pageview->page }}" 
+                                        <a href="{{ $site->domain . $pageview->page }}"
                                         target="_blank"
                                         @click.stop
-                                        rel="nofollow noreferrer noopener" 
+                                        rel="nofollow noreferrer noopener"
                                         class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-all hover:scale-110">
                                             <x-icon name="heroicon-o-arrow-top-right-on-square" class="w-5 h-5" />
                                         </a>
                                     </div>
-                                    <a href="{{ $website->domain . $pageview->page }}" 
+                                    <a href="{{ $site->domain . $pageview->page }}"
                                        target="_blank"
                                        rel="nofollow noreferrer noopener"
-                                       class="block text-sm font-mono bg-gray-50 dark:bg-gray-900 px-3 py-1 rounded-md border border-gray-200 dark:border-gray-700 mt-1 truncate hover:text-clip hover:whitespace-normal group-hover:border-indigo-300 dark:group-hover:border-indigo-700 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800" 
-                                       title="{{ $website->domain . $pageview->page }}">
-                                        <span class="text-indigo-500 dark:text-indigo-400">{{ $website->domain }}</span><span class="text-gray-600 dark:text-gray-300 max-w-[200px] truncate hover:max-w-full transition-all duration-300" title="{{ $pageview->page }}">{{ $pageview->page }}</span>
+                                       class="block text-sm font-mono bg-gray-50 dark:bg-gray-900 px-3 py-1 rounded-md border border-gray-200 dark:border-gray-700 mt-1 truncate hover:text-clip hover:whitespace-normal group-hover:border-indigo-300 dark:group-hover:border-indigo-700 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+                                       title="{{ $site->domain . $pageview->page }}">
+                                        <span class="text-indigo-500 dark:text-indigo-400">{{ $site->domain }}</span><span class="text-gray-600 dark:text-gray-300 max-w-[200px] truncate hover:max-w-full transition-all duration-300" title="{{ $pageview->page }}">{{ $pageview->page }}</span>
                                     </a>
                                     <div class="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400 mt-2">
                                         <div class="flex items-center gap-1.5 hover:text-primary-500 transition-colors">
@@ -168,7 +168,7 @@
                                         <span class="text-gray-300 dark:text-gray-600">•</span>
                                         <div class="flex items-center gap-1.5 hover:text-primary-500 transition-colors">
                                             @if($pageview->referrer)
-                                                <img src="https://{{ parse_url($pageview->referrer, PHP_URL_HOST) }}/favicon.ico" 
+                                                <img src="https://{{ parse_url($pageview->referrer, PHP_URL_HOST) }}/favicon.ico"
                                                     class="w-4 h-4"
                                                     onerror="this.src='{{ asset('vendor/analytics/icons/globe.svg') }}'"
                                                     alt="Referrer favicon">
@@ -204,8 +204,8 @@
                             {{-- Location info --}}
                             <div class="flex items-start gap-3 bg-blue-50/50 dark:bg-blue-900/20 p-3 rounded-lg hover:shadow-lg transition-shadow duration-300 hover:bg-blue-100/50 dark:hover:bg-blue-900/30">
                                 <div class="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg shadow-inner">
-                                    <img src="{{ asset('/vendor/analytics/icons/countries/' . formatFlag($pageview->country)) }}.svg" 
-                                        class="w-6 h-6 hover:scale-110 transition-transform" 
+                                    <img src="{{ asset('/vendor/analytics/icons/countries/' . formatFlag($pageview->country)) }}.svg"
+                                        class="w-6 h-6 hover:scale-110 transition-transform"
                                         alt="Country flag">
                                 </div>
                                 <div class="min-w-0 space-y-2">
@@ -245,8 +245,8 @@
                             {{-- Browser info --}}
                             <div class="flex items-start gap-3 bg-purple-50/50 dark:bg-purple-900/20 p-3 rounded-lg hover:shadow-lg transition-shadow duration-300 hover:bg-purple-100/50 dark:hover:bg-purple-900/30">
                                 <div class="bg-purple-100 dark:bg-purple-900/30 p-2 rounded-lg shadow-inner">
-                                    <img src="{{ asset('/vendor/analytics/icons/browsers/'.formatBrowser($pageview->browser)) }}.svg" 
-                                        class="w-6 h-6 hover:scale-110 transition-transform" 
+                                    <img src="{{ asset('/vendor/analytics/icons/browsers/'.formatBrowser($pageview->browser)) }}.svg"
+                                        class="w-6 h-6 hover:scale-110 transition-transform"
                                         alt="Browser icon">
                                 </div>
                                 <div class="flex-1 min-w-0 space-y-2">
@@ -317,5 +317,5 @@
                 </div>
             </div>
         @endif
-    </div> 
+    </div>
 </div>

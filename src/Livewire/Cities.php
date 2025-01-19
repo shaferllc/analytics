@@ -2,37 +2,29 @@
 
 namespace Shaferllc\Analytics\Livewire;
 
-use Carbon\Carbon;
 use Livewire\Component;
-use Illuminate\Support\Str;
-use Livewire\Attributes\On;
 use Livewire\WithPagination;
-use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
-use Livewire\Attributes\Computed;
-use Shaferllc\Analytics\Models\Stat;
-use Shaferllc\Analytics\Models\Website;
+use Livewire\Attributes\Title;
+use App\Models\Site;
 use Shaferllc\Analytics\Traits\ComponentTrait;
 use Shaferllc\Analytics\Traits\DateRangeTrait;
 
+#[Title('Cities')]
 class Cities extends Component
 {
     use DateRangeTrait, WithPagination, ComponentTrait;
 
     #[Locked]
-    public Website $website;
-    public function mount(Website $website)
-    {
-        $this->website = $website;   
-    }
+    public Site $site;
 
-    #[Layout('analytics::layouts.app')]
     public function render()
     {
 
         $data = $this->query(
-            type: 'city', 
-            to: $this->to, 
+            category: 'location',
+            type: 'city',
+            to: $this->to,
             from: $this->from
         );
 
@@ -41,12 +33,8 @@ class Cities extends Component
             'first' => $data['first'],
             'last' => $data['last'],
             'total' => $data['total'],
-            'page' => 'cities',
+            'aggregates' => $data['aggregates'],
             'range' => $this->range,
-        ])->layoutData([
-            'range' => $this->range,
-            'page' => 'cities',
-            'website' => $this->website,
         ]);
     }
 }

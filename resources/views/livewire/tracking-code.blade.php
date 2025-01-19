@@ -1,38 +1,33 @@
-    <div class="bg-gray-100 flex items-center flex-grow">
-        <div class="container py-3 my-3">
-            <div class="flex justify-center">
-                <div class="w-full md:w-10/12 lg:w-8/12 xl:w-6/12">
-                    <div class="bg-white rounded-lg shadow-sm">
-                        <div class="px-4 py-3 border-b border-gray-200">
-                            <div class="flex justify-between items-center">
-                                <div>
-                                    <div class="font-medium">{{ __('Tracking code') }}</div>
-                                </div>
+<x-site :site="$site">
+    <div class="space-y-4">
+        <x-analytics::breadcrumbs :breadcrumbs="[
+            [
+                'url' => route('sites.analytics.overview', ['site' => $site->id]),
+                'label' => __('Dashboard'),
+            ],
+            [
+                'url' => route('sites.analytics.tracking-code', ['site' => $site->id]),
+                'label' => __('Tracking Code'),
+                'icon' => 'heroicon-o-code-bracket',
+            ]
+        ]" />
+        @include('analytics::livewire.partials.nav')
 
-                                <div class="flex items-center">
-                                    <span class="flex items-center">
-                                        <img src="https://icons.duckduckgo.com/ip3/{{ $website->domain }}.ico" rel="noreferrer" class="w-4 h-4 {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}">
-                                    </span>
-                                    <span class="flex-grow">{{ $website->domain }}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="p-4">
-                            @include('analytics::shared.message')
+        <x-analytics::title
+            :title="__('Tracking Code')"
+            :description="__('Add analytics tracking to your website.')"
+            :icon="'heroicon-o-code-bracket'"
+            :website="$site"
+        />
 
-                            <div class="mb-4">
-                                @include('analytics::shared.tracking-code')
-                            </div>
+        <div>
+            <div class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl shadow-lg border border-gray-700 p-6">
 
-                            <div class="mt-3">
-                                <a href="{{ route('analytics.stats.overview', ['website' => $website]) }}" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded flex items-center justify-center">
-                                    {{ __('Start') }}
-                                    <x-icon name="heroicon-o-arrow-right" class="w-4 h-4 fill-current" />
-                                </a>
-                            </div>
-                        </div>
-                    </div>
+                <div class="space-y-4">
+                    @include('analytics::shared.message')
+                    @include('analytics::shared.tracking-code')
                 </div>
             </div>
         </div>
     </div>
+</x-site>

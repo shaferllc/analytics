@@ -32,7 +32,7 @@
                                         <x-icon name="heroicon-o-document-text" class="w-3.5 h-3.5 text-blue-600 dark:text-blue-300" />
                                     </div>
                                     <div class="truncate text-gray-900 dark:text-gray-100 font-medium text-sm" dir="ltr">{{ $page->value }}</div>
-                                    <a href="http://{{ $website->domain . $page->value }}" target="_blank" rel="nofollow noreferrer noopener" class="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
+                                    <a href="http://{{ $site->domain . $page->value }}" target="_blank" rel="nofollow noreferrer noopener" class="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
                                         <x-icon name="heroicon-o-link" class="w-3.5 h-3.5" />
                                     </a>
                                 </div>
@@ -75,7 +75,7 @@
 
         @if(count($pages) > 0)
             <div class="p-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">
-                <a href="{{ route('websites.analytics.pages', ['website' => $website, 'from' => $range['from'], 'to' => $range['to']]) }}" class="flex items-center justify-center text-white hover:text-yellow-200 font-bold text-lg transition-colors group">
+                <a href="{{ route('websites.analytics.pages', ['website' => $site, 'from' => $range['from'], 'to' => $range['to']]) }}" class="flex items-center justify-center text-white hover:text-yellow-200 font-bold text-lg transition-colors group">
                     <span class="mr-3 uppercase tracking-wider">{{ __('View all :count Pages', ['count' => $totalPages]) }}</span>
                     <svg class="w-6 h-6 fill-current transform group-hover:translate-x-1 transition-transform duration-200" viewBox="0 0 24 24">
                         <path d="M13.025 1l-2.847 2.828 6.176 6.176h-16.354v3.992h16.354l-6.176 6.176 2.847 2.828 10.975-11z"/>

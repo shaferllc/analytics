@@ -2,7 +2,7 @@
     <div class="bg-gray-100 flex items-center justify-center min-h-screen">
         <div class="container mx-auto px-4 py-16">
             <div class="max-w-md mx-auto">
-                <form action="{{ route('analytics.stats.password', ['website' => $website]) }}" method="post" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+                <form action="{{ route('analytics.stats.password', ['website' => $site]) }}" method="post" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
                     @csrf
 
                     <h1 class="text-2xl mb-3 text-center font-bold">{{ __('Website protected') }}</h1>
@@ -24,5 +24,5 @@
         </div>
     </div>
 
-    @include('analytics::shared.sidebars.user', ['website' => $website])
+    @include('analytics::shared.sidebars.user', ['website' => $site])
 </x-app>

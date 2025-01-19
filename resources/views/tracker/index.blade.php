@@ -1,38 +1,18 @@
 (function (w) {
     'use strict';
 
-    // Configuration
+    // Configurationhttps://duckduckgo.com/?q=locan+calculator&t=vivaldi
     {!! view('analytics::tracker.config.config')->render() !!}
-    
+
     // Utility functions
     {!! view('analytics::tracker.utils.utilities')->render() !!}
-    
-    // Request parameters
-    const requestParams = {
-        browser: utils.getBrowser(),
-        browser_version: utils.getBrowserVersion(),
-        os: utils.getOS(),
-        city: utils.getCity(),
-        country: utils.getCountry(),
-        device: /Mobile|iP(hone|od|ad)|Android|BlackBerry|IEMobile|Kindle|NetFront|Silk-Accelerated|(hpw|web)OS|Fennec|Minimo|Opera M(obi|ini)|Blazer|Dolfin|Dolphin|Skyfire|Zune/.test(navigator.userAgent) ? 'mobile' : 'desktop',
-        ip: utils.getIpAddress(),
-        language: utils.getLanguage(),
-        page: w.location.href,
-        page_title: document.title,
-        referrer: w.document.referrer,
-        session_id: utils.getSessionId(),
-        timestamp: new Date().toISOString(),
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        url_path: utils.anonymize.url(w.location.pathname === '/' ? w.location.href : w.location.pathname),
-        url_query: w.location.search,
-        user_agent: utils.getUserAgent(),
-    };
+
 
     // Event handlers
     {!! view('analytics::tracker.utils.handlers')->render() !!}
 
-    // Main RadMonitor class
-    class RadMonitor {
+    // Main TSMonitor class
+    class TSMonitor {
         constructor() {
             this.params = {};
             this.sessionId = null;
@@ -40,7 +20,6 @@
             this.requestQueue = [];
             this.isProcessingQueue = false;
             this.sendRequestFailures = 0;
-            this.isTrackingAllowed = false;
             this.abTests = {};
             this.userId = null;
             this.isRecording = false;
@@ -59,59 +38,214 @@
         }
 
         init() {
-            if (config.debug) {
-                RadMonitor.toggleDebug(true, 'browser');
+
+            const startSessionTime = Date.now();
+
+            if (TSMonitorConfig.browserDebug) {
+                TSMonitor.toggleDebug(true);
             }
-            utils.debugLog('Checking Do Not Track');
 
-            this.isTrackingAllowed = config.requireConsent ? this.checkConsent() : true;
-            utils.debugLog('Checking consent:', this.isTrackingAllowed);
+            if (TSMonitorConfig.debug) {
+                TSMonitor.toggleDebug(true, 'js');
+            }
 
-            utils.debugLog('isTrackingAllowed:', this.isTrackingAllowed);
+            utils.debugLog('Initializing analytics');
 
-            //if (this.isTrackingAllowed) {
-                utils.debugLog('Initializing analytics');
+            const queueEvent = (name, value, sendImmediately = false, type = 'event') => this.queueRequest({name, value, sendImmediately, type });
 
-                const queueEvent = (name, value) => this.queueRequest({ name, value });
+            queueEvent('start_session', {
+                start_time: startSessionTime,
+                user_id: utils.getUserId(),
+                time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                language: utils.getBrowserLanguage(),
+                city: utils.getCity(),
+                continent: utils.getContinent(),
+                country: utils.getCountry(),
+            });
 
-                w.addEventListener('popstate', () => queueEvent('pop_state'));
-                w.addEventListener('load', () => {
-                    utils.initializeEventListeners(config.events);
-                    this.startBatchTimer();
-                });
 
-                const originalPushState = history.pushState;
-                history.pushState = (...args) => {
-                    const referrer = utils.anonymize.url(w.location.href);
-                    originalPushState.apply(history, args);
-                    queueEvent('push_state', referrer);
-                };
+            queueEvent('page_data', {
+                query: utils.getPageQuery(),
+                // url: utils.getPageUrl(),
+                // path: utils.getPagePath(),
+                hash: utils.getPageHash(),
+                referrer: utils.getReferrer(),
+                redirect_count: utils.getRedirectCount(),
+                page_title: utils.getPageTitle(),
+                page_description: utils.getPageDescription(),
+                page_keywords: utils.getPageKeywords(),
+                canonical_url: utils.getCanonicalUrl(),
+                og_metadata: utils.getOgMetadata(),
+                twitter_metadata: utils.getTwitterMetadata(),
+                structured_data: utils.getStructuredData(),
+                hreflang_tags: utils.getHreflangTags(),
+                robots_meta: utils.getRobotsMeta(),
+            });
 
-                queueEvent('pageview');
+            queueEvent('traffic_source_data', {
+                campaign: utils.getCampaign() || null,
+                landing_page: utils.getLandingPage(),
+                search_engine: utils.getSearchEngine() || null,
+                social_network: utils.getSocialNetwork() || null,
+            });
 
-                this.trackTimeOnPage();
+            queueEvent('browser_data', {
+                user_agent: utils.getUserAgent(),
+                browser: utils.getBrowser() + ' ' + utils.getBrowserVersion(),
+                browser_language: utils.getBrowserLanguage(),
+                color_scheme: utils.getPreferredColorScheme(),
+                device_pixel_ratio: utils.getDevicePixelRatio(),
+                reduced_motion: utils.getReducedMotionPreference(),
+                viewport_width: utils.getViewportWidth(),
+            });
 
-                utils.debugLog('Tracking exit rate');
-                this.trackExitRate();
+            queueEvent('performance_metrics', {
+                current_fps: utils.getCurrentFPS(),
+                page_load_metrics: utils.getPageLoadMetrics(),
+                largest_contentful_paint: utils.getLargestContentfulPaint(),
+                first_input_delay: utils.getFirstInputDelay(),
+                cumulative_layout_shift: utils.getCumulativeLayoutShift(),
+                resource_timing: utils.getResourceTiming(),
+                load_time: utils.getLoadTime(),
+                network_latency: utils.getNetworkLatency(),
+                page_load_time: utils.getPageLoadTime(),
+            });
 
-                utils.debugLog('Processing batched requests');
-                this.processBatchedRequests();
+            queueEvent('user_interaction_data', {
+                element_z_level: utils.getElementZLevel(),
+                scroll_direction: utils.getScrollDirection(),
+                scroll_speed: utils.getScrollSpeed(),
+                scroll_depth: utils.getScrollDepth(),
+                navigation_type: utils.getNavigationType(),
+                redirect_count: utils.getRedirectCount(),
+                page_depth: utils.getPageDepth(),
+            });
 
-                utils.debugLog('Sending offline requests');
-                this.sendOfflineRequests();
+            queueEvent('device_data', {
+                battery_status: utils.getBatteryStatus(),
+                cpu_cores: utils.getCPUCores(),
+                device: utils.getDevice(),
+                device_type: utils.getDeviceType(),
+                os: utils.getOS(),
+                memory_usage: utils.getMemoryUsage(),
+                screen_locked: utils.isScreenLocked(),
+                resolution: utils.getResolution(),
+                memory: utils.getDeviceMemory(),
+                connection_speed: utils.getConnectionSpeed(),
+            });
+
+            w.addEventListener('beforeunload', () => {
+                const endSessionTime = Date.now();
+                queueEvent('end_session', {
+                    end_time: endSessionTime,
+                    total_duration_seconds: Math.round((endSessionTime - startSessionTime) / 1000),
+                    total_duration: endSessionTime - startSessionTime,
+                    page_url: utils.getPageUrl(),
+                    exit_page: utils.getPagePath()
+                }, true);
+            });
+
+            w.addEventListener('load', () => {
+                utils.initializeEventListeners(w.TSMonitorConfig.events);
+                this.startBatchTimer();
+            });
+
+            utils.debugLog('Track Ad Clicks');
+            this.trackAdClicks();
+
+            utils.debugLog('Tracking outbound links');
+            this.trackOutboundLinks();
+
+            utils.debugLog('Tracking viewport size');
+            this.trackViewport();
+
+            // utils.debugLog('Tracking tab visibility');
+            // this.trackTabVisibility();
+
+            // utils.debugLog('Tracking Gutenberg editor interactions');
+            // this.trackGutenbergEditorInteractions();
+
+         //  utils.debugLog('Tracking GPU errors');
+         //  this.trackGPUInternalErrors();
+
+         //  utils.debugLog('Tracking GPU out of memory errors');
+         //  this.trackGPUOutOfMemoryError();
+
+         //  utils.debugLog('Tracking GPU pipeline errors');
+         //  this.trackGPUPipelineError();
+
+         //  utils.debugLog('Tracking GPU validation errors');
+         //  this.trackGPUValidationError();
+
+         //  utils.debugLog('Tracking GPU uncaptured errors');
+         //  this.trackGPUUncapturedError();
+
+         //  utils.debugLog('Tracking GPU errors');
+         //  this.trackGPUErrors();
+
+         //  utils.debugLog('Tracking scroll depth');
+         //  this.trackScrollDepth();
+
+         //  utils.debugLog('Tracking file downloads');
+         //  this.trackFileDownloads();
+
+         //  utils.debugLog('Tracking form interactions');
+         //  this.trackFormInteractions();
+
+         //  utils.debugLog('Tracking search interactions');
+         //  this.trackSearchInteractions();
+
+         //  utils.debugLog('Tracking heatmap clicks');
+         //  this.trackHeatmapClicks();
+
+         //  utils.debugLog('Tracking user frustration');
+         //  this.trackUserFrustration();
+
+         //  utils.debugLog('Tracking form submissions');
+         //  this.trackFormSubmissions(); //todo
+
+         //  utils.debugLog('Tracking media interactions');
+         //  this.trackMediaInteractions(); //todo
+
+         //  utils.debugLog('Tracking exit rate');
+         //  this.trackExitRate();
+
+         // // utils.debugLog('Tracking geolocation errors');
+         // // this.trackGeolocationErrors();
+
+         //  utils.debugLog('Tracking bounce rate');
+         //  this.trackBounceRate(); //todo
+
+         //  utils.debugLog('Tracking video watching');
+         //  this.trackVideoWatching(); //todo
+
+         //  utils.debugLog('Tracking copy/paste');
+         //  this.trackCopyPaste();
+
+         //  utils.debugLog('Tracking mouse movements');
+         //  this.trackMouseMovements();
+
+            //     utils.debugLog('Tracking user inactivity');
+            //     this.trackUserInactivity(); //todo
+
+            //     utils.debugLog('Tracking engagement');
+            //     // this.trackEngagement(); //todo
+
+                // utils.debugLog('Tracking JS errors');
+                // this.trackJSErrors();
+
+                // utils.debugLog('Sending offline requests');
+                // this.sendOfflineRequests();
            // }
         }
 
-       
+
 
         // Request parameters
         {!! view('analytics::tracker.utils.request')->render() !!}
 
         // Trackers
         {!! view('analytics::tracker.utils.trackers')->render() !!}
-
-        // Consent
-        {!! view('analytics::tracker.utils.consent')->render() !!}
 
         // functions
         {!! view('analytics::tracker.utils.functions')->render() !!}
@@ -124,53 +258,53 @@
 
     }
 
-    // Initialize RadMonitor
-    RadMonitor.instance = new RadMonitor();
-    RadMonitor.instance.init();
+    // Initialize TSMonitor
+    TSMonitor.instance = new TSMonitor();
+    TSMonitor.instance.init();
 
-    // Expose RadMonitor to the global scope
-    w.RadMonitor = RadMonitor;
+    // Expose TSMonitor to the global scope
+    w.TSMonitor = TSMonitor;
 
 })(window);
 
-// Example usage of RadMonitor functions
-// RadMonitor.toggleDebug(true);
-// RadMonitor.toggleDebug(true, 'browser');
-// RadMonitor.trackEvent('button_click', { buttonId: 'submit-form' });
-// RadMonitor.abTest('homepage_layout', ['A', 'B']);
-// RadMonitor.setUserId('user123');
-// RadMonitor.startRecording();
-// RadMonitor.stopRecording();
+// Example usage of TSMonitor functions
+// TSMonitor.toggleDebug(true);
+// TSMonitor.toggleDebug(true, 'browser');
+// TSMonitor.trackEvent('button_click', { buttonId: 'submit-form' });
+// TSMonitor.abTest('homepage_layout', ['A', 'B']);
+// TSMonitor.setUserId('user123');
+// TSMonitor.startRecording();
+// TSMonitor.stopRecording();
 
 
-// // Usage examples for RadMonitor
+// // Usage examples for TSMonitor
 
 // // 1. Track a custom event
-// RadMonitor.trackEvent('product_view', { productId: 'ABC123', category: 'Electronics' });
+// TSMonitor.trackEvent('product_view', { productId: 'ABC123', category: 'Electronics' });
 
 // // 2. Set up an A/B test
-// const variant = RadMonitor.abTest('pricing_page', ['original', 'discount', 'free_shipping']);
+// const variant = TSMonitor.abTest('pricing_page', ['original', 'discount', 'free_shipping']);
 // console.log('User is in variant:', variant);
 
 // // 3. Set a user ID for the current session
-// RadMonitor.setUserId('user_789');
+// TSMonitor.setUserId('user_789');
 
 // // 4. Start session recording
-// RadMonitor.startRecording();
+// TSMonitor.startRecording();
 
 // // 5. Stop session recording after some user interactions
 // setTimeout(() => {
-//     RadMonitor.stopRecording();
+//     TSMonitor.stopRecording();
 // }, 60000); // Stop recording after 1 minute
 
-// RadMonitor.setUserPropertitoISOStringes({ userType: 'premium', accountAge: 365 });
-// RadMonitor.trackPageView('Custom Page Title', 'https://example.com/custom-page');
-// RadMonitor.trackError('API Error', { status: 500, message: 'Internal Server Error' });
-// RadMonitor.setConsentStatus(true);
-// console.log('Consent Status:', RadMonitor.getConsentStatus());
-// RadMonitor.clearUserData();
-// console.log('Current Session ID:', RadMonitor.getSessionId());
-// RadMonitor.setCustomDimension('userSegment', 'highValue');
-// RadMonitor.trackTiming('apiCall', 'getUserData', 250, 'GET /api/user');
-// console.log('Current Config:', RadMonitor.getConfig());
-// RadMonitor.updateConfig({ debug: true, heatMap: true })
+// TSMonitor.setUserPropertitoISOStringes({ userType: 'premium', accountAge: 365 });
+// TSMonitor.trackPageView('Custom Page Title', 'https://example.com/custom-page');
+// TSMonitor.trackError('API Error', { status: 500, message: 'Internal Server Error' });
+// TSMonitor.setConsentStatus(true);
+// console.log('Consent Status:', TSMonitor.getConsentStatus());
+// TSMonitor.clearUserData();
+// console.log('Current Session ID:', TSMonitor.getSessionId());
+// TSMonitor.setCustomDimension('userSegment', 'highValue');
+// TSMonitor.trackTiming('apiCall', 'getUserData', 250, 'GET /api/user');
+// console.log('Current Config:', TSMonitor.getConfig());
+// TSMonitor.updateConfig({ debug: true, heatMap: true })

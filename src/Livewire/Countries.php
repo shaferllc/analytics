@@ -2,35 +2,28 @@
 
 namespace Shaferllc\Analytics\Livewire;
 
-use Carbon\Carbon;
 use Livewire\Component;
-use Illuminate\Support\Str;
-use Livewire\Attributes\On;
 use Livewire\WithPagination;
-use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
-use Livewire\Attributes\Computed;
-use Shaferllc\Analytics\Models\Stat;
-use Shaferllc\Analytics\Models\Website;
+use Livewire\Attributes\Title;
+use App\Models\Site;
 use Shaferllc\Analytics\Traits\ComponentTrait;
 use Shaferllc\Analytics\Traits\DateRangeTrait;
 
+#[Title('Countries')]
 class Countries extends Component
 {
     use DateRangeTrait, WithPagination, ComponentTrait;
 
     #[Locked]
-    public Website $website;
-    public function mount(Website $website)
-    {
-        $this->website = $website;   
-    }
+    public Site $site;
 
-    #[Layout('analytics::layouts.app')]
     public function render()
     {
 
+
         $data = $this->query(
+            category: 'location',
             type: 'country',
             to: $this->to,
             from: $this->from
@@ -41,12 +34,8 @@ class Countries extends Component
             'first' => $data['first'],
             'last' => $data['last'],
             'total' => $data['total'],
-            'page' => 'countries',
+            'aggregates' => $data['aggregates'],
             'range' => $this->range,
-        ])->layoutData([
-            'range' => $this->range,
-            'page' => 'countries',
-            'website' => $this->website,
         ]);
     }
 }

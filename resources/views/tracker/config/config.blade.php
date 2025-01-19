@@ -1,26 +1,33 @@
 // Global configuration object
-w.RadMonitorConfig = w.RadMonitorConfig || {};
+w.TSMonitorConfig = w.TSMonitorConfig || {
 
-const defaultConfig = {
-    host: 'https://checkers.test',
-    websiteId: '',
-    debug: false,
-    isBrowserDebug: false,
-    heatMap: false,
-    events: ['scroll', 'beforeunload', 'click', 'load'],
-    requireConsent: false,
 };
 
-const config = Object.assign({}, defaultConfig, w.RadMonitorConfig);
+const defaultConfig = {
+    host: '{{ config('app.url') }}',
+    siteId: '',
+    debug: false,
+    browserDebug: false,
+    events: ['scroll', 'beforeunload', 'click', 'load', 'mousemove', 'keydown', 'submit', 'focus', 'blur', 'resize', 'error', 'contextmenu', 'touchstart', 'touchend', 'touchmove'],
+};
+
+// Merge configurations
+const config = Object.assign({}, defaultConfig, w.TSMonitorConfig);
+
+// Make sure currentPage is always available
+if (!config.currentPage) {
+    config.currentPage = defaultConfig.currentPage;
+}
 
 // Configuration
 const internalConfig = {
     isDebug: config.debug,
-    isBrowserDebug: config.isBrowserDebug,
+    browserDebug: config.browserDebug,
     SESSION_DURATION: 30 * 60 * 1000,
     batchInterval: 10000, // 10 seconds in milliseconds
-    consentCookieName: 'rad_monitor_consent',
-    consentDuration: 12 * 60 * 60 * 1000,
     dataRetentionPeriod: 90 * 24 * 60 * 60 * 1000,
-    csrfTokenName: 'rad_monitor_csrf_token',
+    csrfTokenName: 'ts_monitor_csrf_token',
 };
+
+// Make config globally accessible
+w.TSMonitorConfig = config;

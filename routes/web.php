@@ -1,22 +1,22 @@
 <?php
 
 use Streamline\Streamline;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Route;
-use Shaferllc\Analytics\Http\Controllers\StatController;
-use Shaferllc\Analytics\Http\Controllers\WebsiteController;
 use Shaferllc\Analytics\Models\Website;
+use Shaferllc\Analytics\Http\Controllers\WebsiteController;
 
-Route::prefix('websites/{website}/analytics')->middleware(Streamline::middleware())
-    ->name('websites.analytics.')->group(function () {
+Route::prefix('sites/{site}/analytics')->middleware(Streamline::middleware())
+    ->name('sites.analytics.')->group(function () {
         Route::get('/', \Shaferllc\Analytics\Livewire\Overview::class)->name('overview');
-    // Route::get('/sites/create', [WebsiteController::class, 'create'])->name('sites.create'); 
+    // Route::get('/sites/create', [WebsiteController::class, 'create'])->name('sites.create');
     // Route::post('/sites/create', [WebsiteController::class, 'store']);
-  
+
     // Route::prefix('sites/{website}')->group(function () {
 
         // Route::post('edit', [WebsiteController::class, 'update']);
         // Route::post('destroy', [WebsiteController::class, 'destroy'])->name('sites.destroy');
-        // Route::get('edit', [WebsiteController::class, 'edit'])->name('sites.edit'); 
+        // Route::get('edit', [WebsiteController::class, 'edit'])->name('sites.edit');
 
         $components = [
             'realtime' => \Shaferllc\Analytics\Livewire\Realtime::class,
@@ -37,14 +37,19 @@ Route::prefix('websites/{website}/analytics')->middleware(Streamline::middleware
             'landing_pages' => \Shaferllc\Analytics\Livewire\LandingPages::class,
             'pages' => \Shaferllc\Analytics\Livewire\Pages::class,
             'real_time' => \Shaferllc\Analytics\Livewire\RealTime::class,
-            'tracking_code' => \Shaferllc\Analytics\Livewire\TrackingCode::class,
+            'tracking-code' => \Shaferllc\Analytics\Livewire\TrackingCode::class,
+            'technology' => \Shaferllc\Analytics\Livewire\Technology::class,
             // 'exit_pages' => \Shaferllc\Analytics\Livewire\ExitPages::class,
-            
+            'geographic' => \Shaferllc\Analytics\Livewire\Geographic::class,
+            'timezones' => \Shaferllc\Analytics\Livewire\Timezones::class,
+            'user-agents' => \Shaferllc\Analytics\Livewire\UserAgents::class,
+            'acquisitions' => \Shaferllc\Analytics\Livewire\Acquisitions::class,
+            'sessions' => \Shaferllc\Analytics\Livewire\Sessions::class,
         ];
         foreach ($components as $name => $class) {
-            Route::get("/{$name}", $class)->name($name);
+            Route::get("/{$name}/{value?}", $class)->name(Str::replace('_', '-', $name));
         }
 
-        // Route::post('/password', [StatController::class, 'validatePassword'])->name('stats.password');
+        Route::get('/page/{value}', \Shaferllc\Analytics\Livewire\Page::class)->name('page');
     // });
 })->scopeBindings();

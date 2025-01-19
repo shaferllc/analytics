@@ -1,29 +1,57 @@
-<div>
+<x-site :site="$site">
+    <div class="space-y-4" wire:poll.5s>
+        <x-analytics::breadcrumbs :breadcrumbs="[
+            [
+                'url' => route('sites.analytics.overview', ['site' => $site->id]),
+                'label' => __('Dashboard'),
+            ],
+            [
+                'url' => route('sites.analytics.realtime', ['site' => $site->id]),
+                'label' => __('Realtime'),
+                'icon' => 'heroicon-o-chart-bar',
+            ]
+        ]" />
 
-    <div wire:poll.{{ $interval }}s>
-        
-        <div class="bg-white dark:bg-gray-800 rounded-t-lg shadow-sm mb-3">
-            <div class="px-3 border-b dark:border-gray-700">
-                <div class="flex flex-col space-y-6">
-                    <!-- Title Row -->
-                    @include('analytics::livewire.partials.realtime.title')
-                    <!-- Stats Row -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        
-                        <!-- Visitors Card -->
-                        @include('analytics::livewire.partials.realtime.visitors-card' )
+        @include('analytics::livewire.partials.nav')
 
-                        <!-- Pageviews Card -->
-                        @include('analytics::livewire.partials.realtime.pageviews-card')
-                    </div>
-                </div>
-                include('analytics::livewire.partials.graph')  
-            
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="lg:col-span-2">
+                <x-analytics::chart-card
+                    title="{{ __('Active Visitors') }}"
+                    :data="['Now' => $activeVisitors]"
+                />
             </div>
 
-        
-            @include('analytics::livewire.partials.realtime.recent', ['recent' => $this->recent])
+            <div>
+                <x-analytics::stat-card
+                    title="{{ __('Page Views') }}"
+                    :value="$pageviews"
+                    icon="heroicon-o-document-text"
+                />
+            </div>
 
+            <div>
+                <x-analytics::list-card
+                    title="{{ __('Top Pages') }}"
+                    :items="$pages"
+                />
+            </div>
+
+            <div>
+                <x-analytics::list-card
+                    title="{{ __('Countries') }}"
+                    :items="$countries"
+                />
+            </div>
+
+            <div>
+                <x-analytics::list-card
+                    title="{{ __('Referrers') }}"
+                    :items="$referrers"
+                />
+            </div>
         </div>
     </div>
-</div>
+
+</x-website>

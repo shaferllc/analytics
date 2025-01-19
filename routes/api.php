@@ -34,7 +34,7 @@ use Shaferllc\Analytics\Http\Controllers\API\TrackerController;
 // });
 Route::prefix('api')->name('api.')->middleware('api')->group(function () {
     Route::prefix('v1')->name('v1.')->group(function () {
-        Route::get('radmonitor', TrackerController::class)->name('tracker');
+        Route::get('monitor', TrackerController::class)->name('monitor');
         Route::post('event', EventController::class)->name('event');
     });
 });

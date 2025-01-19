@@ -2,14 +2,20 @@
 
 namespace Shaferllc\Analytics\Http\Controllers\API;
 
+use App\Models\Site;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Streamline\Classes\Agent;
 use Illuminate\Support\Carbon;
+use Streamline\Jobs\Screenshot;
+use Illuminate\Routing\Pipeline;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
 use GeoIp2\Database\Reader as GeoIP;
-use Shaferllc\Analytics\Models\Website;
+use Shaferllc\Analytics\Models\Meta;
+use Shaferllc\Analytics\Models\Event;
+use Shaferllc\Analytics\Models\PageVisitor;
 use Symfony\Component\HttpFoundation\IpUtils;
 
 class EventController
@@ -22,198 +28,77 @@ class EventController
      */
     public function __invoke(Request $request)
     {
-        $websiteId = $request->input('websiteId');
-        if (!$websiteId) {
-            return response()->json(['message' => 'Website ID is required.'], 400);
+        $siteId = $request->input('siteId');
+        if (!$siteId) {
+            return response()->json(['message' => 'Site ID is required.'], 400);
         }
 
-        $website = Website::findOrFail($websiteId);
+        $site = Site::findOrFail($siteId);
 
-        if (!$website->can_track) {
-            return response(403);
-        }
 
-        if ($this->isExcludedIp($website, $request->ip()) || $this->isBot($website, $request->header('User-Agent'))) {
-            return response(403);
-        }
+        // if ($this->isExcludedIp($site, $request->ip()) || $this->isBot($site, $request->header('User-Agent'))) {
+        //     return response(403);
+        // }
 
-        $data = $this->prepareData($request, $website);
+        $data = $this->getVisitorData($request);
 
-        $this->saveData($data, $website);
+        return app(Pipeline::class)
+        ->send(['data' => $data, 'site' => $site])
+        ->through([
+            \Shaferllc\Analytics\Pipelines\CreatePage::class,
+            \Shaferllc\Analytics\Pipelines\UpdatePageMeta::class,
+            \Shaferllc\Analytics\Pipelines\CreateVisitor::class,
+            \Shaferllc\Analytics\Pipelines\HandleSessionStart::class,
+            \Shaferllc\Analytics\Pipelines\HandleSessionEnd::class,
+            \Shaferllc\Analytics\Pipelines\ProcessPageData::class,
+            \Shaferllc\Analytics\Pipelines\ProcessTrafficSourceData::class,
+            \Shaferllc\Analytics\Pipelines\ProcessBrowserData::class,
+            \Shaferllc\Analytics\Pipelines\ProcessPerformanceMetricsData::class,
+            \Shaferllc\Analytics\Pipelines\ProcessUserInteractionData::class,
+            \Shaferllc\Analytics\Pipelines\ProcessDeviceData::class,
+            \Shaferllc\Analytics\Pipelines\ProcessViewportChanges::class,
+            \Shaferllc\Analytics\Pipelines\ProcessOutboundLinkClicks::class,
+        ])
+        ->then(function ($result) {
+            // ray($result);
+            return response(200);
+        });
 
-        return response(200);
     }
 
-    private function isExcludedIp($website, $ip)
-    {
-        if (!$website->exclude_ips) {
-            return false;
-        }
+    // private function isExcludedIp($site, $ip)
+    // {
+    //     if (!$site->exclude_ips) {
+    //         return false;
+    //     }
 
-        $excludedIps = preg_split('/\n|\r/', $website->exclude_ips, -1, PREG_SPLIT_NO_EMPTY);
-        return IpUtils::checkIp($ip, $excludedIps);
-    }
+    //     $excludedIps = preg_split('/\n|\r/', $site->exclude_ips, -1, PREG_SPLIT_NO_EMPTY);
+    //     return IpUtils::checkIp($ip, $excludedIps);
+    // }
 
-    private function isBot($website, $userAgent)
-    {
-        return $website->exclude_bots && strpos(strtolower($userAgent), 'bot') !== false;
-    }
-
-    private function prepareData(Request $request, $website)
-    {
-
-        $now = Carbon::now();
-        $date = $now->format('Y-m-d');
-        $time = $now->format('H');
-      
-        $events = [];
-
-        if ($request->input('events')) {
-            foreach ($request->input('events') as $event) {
-                $events[] = $this->prepareEventData($event);
-            }
-        }
-
-        return $this->preparePageViewData($request, $website, $date, $time, $events);
-    }
-
-    private function prepareEventData($event)
-    {
-        if (empty($event['name'])) {
-            return [];
-        }
-
-        $eventName = str_replace(':', ' ', $event['name']);
-        $eventValue = null;
-
-        // Normal event handling
-        if (!empty($event['value'])) {
-            if (is_array($event['value'])) {
-                $eventValue = implode(',', array_map(function($key, $value) {
-                    return is_array($value) ? "$key:" . json_encode($value) : "$key:$value";
-                }, array_keys($event['value']), $event['value']));
-            } elseif (is_numeric($event['value']) && $event['value'] > 0 && strlen($event['value']) <= 10) {
-                $eventValue = trim($event['value']);
-            }
-        }
-
-        $eventUnit = !empty($event['unit']) && mb_strlen($event['unit']) <= 32 ? $event['unit'] : null;
-
-        return [$eventName => implode(':', array_filter([$eventValue, $eventUnit]))];
-    }
-
-    private function preparePageViewData(Request $request, $website, $date, $time, $events)
-    {
-        $data = [
-            'pageviews_date' => $date,
-            'pageviews_hour' => $time,
-            // 'query_params' => $page['query'],
-        ];
-
-        foreach ($events as $event) {
-            $data = array_merge($data, $event);
-        }
-        $referrer = $this->parseUrl($request->input('referrer'));
-
-        if ($this->isUniqueVisit($referrer, $website)) {
-            $data = array_merge($data, $this->getVisitorData($request, $referrer, $website));
-        }
-
-        return $data;
-    }
+    // private function isBot($site, $userAgent)
+    // {
+    //     return $site->exclude_bots && strpos(strtolower($userAgent), 'bot') !== false;
+    // }
 
     private function getPageUrl($page)
     {
         $url = $page['path'] ?? '/';
         if (isset($page['query']) && !empty($page['query'])) {
             parse_str($page['query'], $queryParams);
-         
+
         }
         return mb_substr($url, 0, 255);
     }
 
-    private function isUniqueVisit($referrer, $website)
+
+    private function getVisitorData(Request $request): array
     {
-        return !isset($referrer['non_www_host']) || $referrer['non_www_host'] != $website->domain;
-    }
-
-    private function getVisitorData(Request $request, $referrer, $website)
-    {
-        $geoData = $this->getGeoData($request->input('ip'));
-
-        $basicData = [
-            'browser' => $request->input('browser'),
-            'browser_version' => $request->input('browser_version'),
-            'city' => $geoData['city'] ?? $request->input('city'),
-            'country' => $geoData['country'] ?? $request->input('country'),
-            'device' => $request->input('device'),
-            'domain' => $request->input('domain'),
-            'ip' => $request->input('ip'),
-            'language' => $request->input('language'),
-            'page' => $this->getPageUrl($this->parseUrl($request->input('page'))),
-            'page_title' => $request->input('page_title'),
-            'referrer' => $request->input('referrer'),
-            'os' => $request->input('os'),
-            'session_id' => $request->input('session_id'),
-            'timezone' => $request->input('timezone'),
-            'url_path' => $request->input('url_path'),
-            'url_query' => $request->input('url_query'),
-            'user_agent' => $request->input('user_agent'),
-        ];
-
-        $geoData = [
-            // 'city' => $geoData['city'] ?? null,
-            // 'continent' => $geoData['continent'] ?? null,
-            // 'country' => $geoData['country'] ?? null,
-        ];
-
-        $dates = [
-            'visitors' => Carbon::now()->format('Y-m-d'),
-            'visitors_hour' => Carbon::now()->format('H'),
-        ];
-
-        $allData = array_filter(array_merge($basicData, $geoData, $dates, [
-            // 'campaign' => $request->input('utm_campaign'),
-            // 'connection_downlink' => $request->input('connection_downlink'),
-            // 'connection_rtt' => $request->input('connection_rtt'),
-            // 'connection_save_data' => $request->input('connection_save_data'),
-            // 'connection_type' => $request->input('connection_type'),
-            // 'cookies_enabled' => $request->input('cookies_enabled'),
-            // 'device' => $request->input('device_type'),
-            // 'device_memory' => $request->input('device_memory'),
-            // 'hardware_concurrency' => $request->input('hardware_concurrency'),
-            // 'ip_address' => $request->input('ip_address'),
-            // 'is_new_session' => $request->input('session_id') !== $request->input('pa_session_id'),
-            // 'java_enabled' => $request->input('java_enabled'),
-            // 'landing_page' => $this->getPageUrl($this->parseUrl($request->input('page'))),
-            // 'language' => $request->input('language'),
-            // 'language_preference' => $request->input('language_preference'),
-            // 'max_touch_points' => $request->input('max_touch_points'),
-            // 'network_type' => $request->input('network_type'),
-            // 'on_line' => $request->input('on_line'),
-            // 'plugins' => $request->input('plugins'),
-            // 'resolution' => $request->input('screen_resolution'),
-            // 'screen_avail_height' => $request->input('screen_avail_height'),
-            // 'screen_avail_width' => $request->input('screen_avail_width'),
-            // 'screen_color_depth' => $request->input('screen_color_depth'),
-            // 'screen_height' => $request->input('screen_height'),
-            // 'screen_orientation' => $request->input('screen_orientation'),
-            // 'screen_orientation_angle' => $request->input('screen_orientation_angle'),
-            // 'screen_orientation_type' => $request->input('screen_orientation_type'),
-            // 'screen_pixel_depth' => $request->input('screen_pixel_depth'),
-            // 'screen_resolution' => $request->input('screen_resolution'),
-            // 'screen_width' => $request->input('screen_width'),
-            // 'service_worker_status' => $request->input('service_worker_status'),
-            // 'touch_support' => $request->input('touch_support'),
-            // 'vendor' => $request->input('vendor'),
-            // 'vendor_sub' => $request->input('vendor_sub'),   
-            // 'viewport_height' => $request->input('viewport_height'),
-            // 'viewport_width' => $request->input('viewport_width'),
-            // 'webgl_support' => $request->input('webgl_support'),
-            // 'worker_support' => $request->input('worker_support')
-        ]));
-
-        return $allData;
+        return array_merge(
+            array_filter($request->all()),
+            $request->has('ip') ? $this->getGeoData($request->input('ip')) : [],
+            []
+        );
     }
 
     private function getGeoData($ip)
@@ -227,53 +112,231 @@ class EventController
             ];
         } catch (\Exception $e) {
             return [];
-        }   
-    }   
-
-    private function saveData($data, $website)
-    {             
-        foreach ($data as $name => $value) {
-            $website->stats()->updateOrCreate(
-                [
-                    'name' => $name,
-                    'date' => Carbon::now()->format('Y-m-d'),
-                    'page' => $data['page'],
-                    'value' => mb_substr($value, 0, 255),
-                    'session_id' => $data['session_id'],
-                ],
-                [
-                    'count' => DB::raw('`count` + 1')
-                ]
-            );
-        }
-
-
-        if (!isset($data['event'])) {
-            $this->saveRecentTraffic($data, $website);
         }
     }
 
-    private function saveRecentTraffic($data, $website)
-    {
-        $website->recents()->updateOrCreate([
-            'session_id' => $data['session_id'],
-            'page' => $data['page'],
-        ], [
-            'referrer' => $data['referrer'] ?? null,
-            'os' => $data['os'] ?? null,
-            'ip' => $data['ip'] ?? null,
-            'timezone' => $data['timezone'] ?? null,
-            'page_title' => $data['page_title'] ?? null,
-            'user_agent' => $data['user_agent'] ?? null,
-            'browser_version' => $data['browser_version'] ?? null,
-            'browser' => $data['browser'] ?? null,
-            'device' => $data['device'] ?? null,
-            'country' => $data['country'] ?? null,
-            'city' => $data['city'] ?? null,
-            'language' => $data['language'] ?? null,
-            'created_at' => Carbon::now(),
-        ]);
-    }
+    // private function saveData($data, $site)
+    // {
+
+    //     $page = Arr::get($data, 'page');
+    //     $path = Arr::get($data, 'path');
+    //     $session_id = Arr::get($data, 'session_id');
+    //     $title = Arr::get($data, 'title');
+    //     $charset = Arr::get($data, 'charset');
+
+    //     $events = Arr::get($data, 'events');
+
+    //     // Start session
+    //     $startSession = collect($events)->where('name', 'start_session')->first();
+
+    //     // End session
+    //     $endSession = collect($events)->where('name', 'end_session')->first();
+
+    //     // Create page
+    //     $page = $site->pages()->firstOrCreate([
+    //         'path' => $path,
+    //         'page' => $page,
+    //     ]);
+
+    //     // Update page meta
+    //     $titles = collect($page->meta_data->get('title', []))->push($title)->unique()->values();
+    //     $page->meta_data->set('title', $titles);
+
+    //     // Update charset
+    //     $charset = collect($page->meta_data->get('charset', []))->push($charset)->unique()->values();
+    //     $page->meta_data->set('charset', $charset);
+    //     $page->save();
+
+    //     // Update visitor data
+    //     $visitor = $page->visitors()->firstOrCreate(
+    //         ['session_id' => $session_id],
+    //         [
+    //             'timezone' => Arr::get($startSession, 'value.time_zone'),
+    //             'language' => Arr::get($startSession, 'value.language'),
+    //             'user_id' => Arr::get($startSession, 'value.user_id'),
+
+    //         ]
+    //     );
+
+    //     // Start session
+    //     if ($startSession) {
+    //         $page->visitors()->updateExistingPivot($visitor->id, [
+    //             'last_visit_at' => now(),
+    //             'total_visits' => ($page->visitors()->where('session_id', $session_id)->first()?->page_visitor?->total_visits ?? 0) + 1,
+    //             'first_visit_at' => $page->visitors()->where('session_id', $session_id)->first()?->page_visitor?->first_visit_at ?? now(),
+    //             'start_session_at' => isset($startSession) ? Carbon::parse(Arr::get($startSession, 'value.start_time')) : null,
+    //         ]);
+    //     }
+
+    //     // End session
+    //     if ($endSession) {
+    //         $page->visitors()->updateExistingPivot($visitor->id, [
+    //             'end_session_at' => isset($endSession) ? Carbon::parse(Arr::get($endSession, 'value.end_time')) : null,
+    //             'total_duration_seconds' => ($page->visitors()->where('session_id', $session_id)->first()?->page_visitor?->total_duration_seconds ?? 0) + Arr::get($endSession, 'value.total_duration_seconds'),
+    //             'total_time_spent' => ($page->visitors()->where('session_id', $session_id)->first()?->page_visitor?->total_time_spent ?? 0) + Arr::get($endSession, 'value.total_duration'),
+    //         ]);
+
+    //         // Create meta
+    //         $meta = $visitor->page_visitor->meta()->firstOrCreate([
+    //             'itemable_id' => $visitor->page_visitor->id,
+    //             'itemable_type' => PageVisitor::class,
+    //             'meta_type' => 'session_end',
+    //         ]);
+
+    //         // Update exit page
+    //         $exit_url = Arr::get($endSession, 'value.exit_page');
+
+    //         // Get existing exit pages
+    //         $exit_pages = collect($meta->meta_data->get('exit_page', []));
+
+    //         // Update or add exit page data
+    //         if ($page = $exit_pages->firstWhere('url', $exit_url)) {
+    //             // Update existing exit page
+    //             $exit_pages->transform(fn($p) => $p['url'] === $exit_url ? ['url' => $p['url'], 'count' => $p['count'] + 1] : $p);
+    //         } else {
+    //             // Add new exit page
+    //             $exit_pages->push(['url' => $exit_url, 'count' => 1]);
+    //         }
+
+    //         // Set meta
+    //         $meta->meta_data->set('exit_page', $exit_pages->values())
+    //             ->set('exit_page_count', [$exit_pages->count()]);
+    //         $meta->save();
+
+    //     }
+
+    //     $visitor->save();
+
+    //     $otherEvents = collect($events)->whereNotIn('name', ['start_session', 'end_session']);
+
+    //     $viewportChange = $otherEvents->where('name', 'viewport_change')->all();
+
+    //     foreach ($viewportChange as $event) {
+
+    //         $parent_event = $visitor->events()->create([
+    //             'site_id' => $site->id,
+    //             'visitor_id' => $visitor->id,
+    //             'page_id' => $page->id,
+    //             'name' => Arr::get($event, 'name'),
+    //             'timestamp' => Arr::get($event, 'timestamp', now()),
+    //         ]);
+
+    //         foreach ($event['value'] as $key => $value) {
+    //             if (!is_array($value)) {
+    //                 // Create parent meta record for non-array values
+    //                 $parent = $parent_event->meta()->create([
+    //                     'itemable_id' => $parent_event->id,
+    //                     'itemable_type' => Event::class,
+    //                     'meta_type' => $key,
+    //                     'meta_data' => $value
+    //                 ]);
+    //             } else {
+    //                 // Create parent meta record for array values
+    //                 $parent = $parent_event->meta()->create([
+    //                     'itemable_id' => $parent_event->id,
+    //                     'itemable_type' => Event::class,
+    //                     'meta_type' => $key,
+    //                     'meta_data' => $value
+    //                 ]);
+    //                 // Create child meta records for each array item
+    //                 foreach ($value as $k => $v) {
+    //                     $parent->parentMeta()->create([
+    //                         'itemable_id' => $parent_event->id,
+    //                         'itemable_type' => Event::class,
+    //                         'metaable_type' => Meta::class,
+    //                         'metaable_id' => $parent->id,
+    //                         'meta_type' => $key . '_' . $k,
+    //                         'meta_data' => [$k => $v],
+    //                         'parent_id' => $parent->id,
+    //                         'parent_type' => $parent->getMorphClass(),
+    //                     ]);
+    //                 }
+    //             }
+    //         }
+    //     }
+
+    //     // $visitor->events()->createMany($otherEvents->toArray());
+    //     // foreach ($otherEvents as $event) {
+    //     //     $event->save();
+    //     // }
+    //     return;
+
+
+
+    //     // Screenshot::dispatch($page->url);
+
+    //     foreach ($events as $event) {
+
+
+
+    //         $hasValueOnly = ['viewport_change'];
+    //         if (in_array($event['name'], $hasValueOnly)) {
+    //             $hashid = md5(json_encode($event['value']));
+    //         } else {
+    //             $hashid = md5($event['session_id'] . $event['user_id'] . $event['name'] . json_encode($event['value']));
+    //         }
+
+    //         if (Arr::has($event, 'timestamp')) {
+    //             if (Arr::get($event, 'timezone')) {
+    //                 $timestamp = Carbon::createFromTimestamp(Arr::get($event, 'timestamp'))->timezone(Arr::get($event, 'timezone'));
+    //             } else {
+    //                 $timestamp = Carbon::createFromTimestamp(Arr::get($event, 'timestamp'));
+    //             }
+    //         } else {
+    //             $timestamp = now();
+    //         }
+
+    //         $commonData = [
+    //             'category' => $event['name'],
+    //             'site_id' => $site->id,
+    //             'user_id' => $event['user_id'],
+    //             'session_id' => $event['session_id'],
+    //             'date' => $timestamp,
+    //             'value' => $event['value']
+    //         ];
+
+    //         $stat = $page->stats()->updateOrCreate(
+    //             ['hashid' => $hashid],
+    //             $commonData
+    //         );
+
+    //         // if ($stat->wasRecentlyCreated) {
+    //         //     ray(
+    //         //         'Created new stat record',
+    //         //         $stat->toArray()
+    //         //     );
+    //         // } else {
+    //         //     ray(
+    //         //         'Updated existing stat record',
+    //         //         $stat->toArray()
+    //         //     );
+    //         // }
+
+    //         $stat->increment('count');
+    //     }
+    //     // $this->saveRecentTraffic($request, $data, $site);
+    // }
+
+    // private function saveRecentTraffic(Request $request, $data, $site)
+    // {
+    //     $site->recents()->updateOrCreate([
+    //         'session_id' => $data['session_id'],
+    //         'page' => $data['page'],
+    //     ], [
+    //         'referrer' => $data['referrer'] ?? null,
+    //         'os' => $data['os'] ?? null,
+    //         'ip' => $data['ip'] ?? null,
+    //         'timezone' => $data['timezone'] ?? null,
+    //         'page_title' => $data['page_title'] ?? null,
+    //         'user_agent' => $data['user_agent'] ?? null,
+    //         'browser' => $data['browser'] ?? null,
+    //         'device' => $data['device'] ?? null,
+    //         'country' => $data['country'] ?? null,
+    //         'city' => $data['city'] ?? null,
+    //         'language' => $data['language'] ?? null,
+    //         'created_at' => Carbon::now(),
+    //     ]);
+    // }
 
     /**
      * Returns the parsed URL, including an always "non-www." version of the host.
@@ -281,16 +344,16 @@ class EventController
      * @param string $url
      * @return array|null
      */
-    private function parseUrl($url)
-    {
-        $parsedUrl = parse_url($url);
+    // private function parseUrl($url)
+    // {
+    //     $parsedUrl = parse_url($url);
 
-        if (!isset($parsedUrl['host'])) {
-            return null;
-        }
+    //     if (!isset($parsedUrl['host'])) {
+    //         return null;
+    //     }
 
-        $parsedUrl['non_www_host'] = ltrim($parsedUrl['host'], 'www.');
+    //     $parsedUrl['non_www_host'] = ltrim($parsedUrl['host'], 'www.');
 
-        return $parsedUrl;
-    }
+    //     return $parsedUrl;
+    // }
 }

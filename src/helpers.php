@@ -4,7 +4,7 @@ use Illuminate\Support\Str;
 
 if (!function_exists('calcGrowth')) {
     function calcGrowth($current, $previous)
-    {   
+    {
         if ($previous == 0) {
             return 0;
         }
@@ -20,8 +20,7 @@ if (!function_exists('calcGrowth')) {
  */
 function formatFlag($value)
 {
-    $country = explode(':', $value);
-    return !empty($country[0]) ? strtolower($country[0]) : 'unknown';
+    return isset($value) ? strtolower($value) : 'unknown';
 }
 
 /**
@@ -33,15 +32,14 @@ function formatFlag($value)
 function formatDevice($key)
 {
     $devices = [
-        'desktop' => 'desktop',
-        'mobile' => 'mobile',
-        'tablet' => 'tablet',
-        'television' => 'tv',
-        'gaming' => 'gaming',
-        'watch' => 'watch'
+        'desktop' => 'heroicon-o-computer-desktop',
+        'mobile' => 'heroicon-o-device-phone-mobile',
+        'tablet' => 'heroicon-o-device-tablet',
+        'television' => 'heroicon-o-tv',
+        'watch' => 'heroicon-o-watch'
     ];
 
-    return $devices[$key] ?? 'unknown';
+    return $devices[$key] ?? 'heroicon-o-question-mark-circle';
 }
 
 
@@ -136,7 +134,7 @@ function formatBrowser($key)
 
     $lowercaseKey = Str::lower($key);
     foreach ($browsers as $browserName => $icon) {
-        
+
         if (Str::contains($lowercaseKey, Str::lower($browserName))) {
             return $icon;
         }
@@ -187,5 +185,11 @@ function formatOperatingSystem($key)
         'Raspbian' => 'raspbian'
     ];
 
-    return $operatingSystems[$key] ?? 'unknown';
+    $lowercaseKey = Str::lower($key);
+    foreach ($operatingSystems as $osName => $icon) {
+        if (Str::contains($lowercaseKey, Str::lower($osName))) {
+            return $icon;
+        }
+    }
+    return 'unknown';
 }

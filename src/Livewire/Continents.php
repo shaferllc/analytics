@@ -2,35 +2,29 @@
 
 namespace Shaferllc\Analytics\Livewire;
 
-use Carbon\Carbon;
 use Livewire\Component;
-use Illuminate\Support\Str;
-use Livewire\Attributes\On;
 use Livewire\WithPagination;
-use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
-use Livewire\Attributes\Computed;
-use Shaferllc\Analytics\Models\Stat;
-use Shaferllc\Analytics\Models\Website;
+use Livewire\Attributes\Title;
+use App\Models\Site;
 use Shaferllc\Analytics\Traits\ComponentTrait;
 use Shaferllc\Analytics\Traits\DateRangeTrait;
 
+#[Title('Continents')]
 class Continents extends Component
 {
     use DateRangeTrait, WithPagination, ComponentTrait;
 
     #[Locked]
-    public Website $website;
-    public function mount(Website $website)
+    public Website $site;
+    public function mount(Website $site)
     {
-        $this->website = $website;   
+        $this->site = $site;
     }
-
-    #[Layout('analytics::layouts.app')]
     public function render()
     {
-
         $data = $this->query(
+            category: 'location',
             type: 'continent',
             to: $this->to,
             from: $this->from
@@ -41,12 +35,8 @@ class Continents extends Component
             'first' => $data['first'],
             'last' => $data['last'],
             'total' => $data['total'],
-            'page' => 'continents',
+            'aggregates' => $data['aggregates'],
             'range' => $this->range,
-        ])->layoutData([
-            'range' => $this->range,
-            'page' => 'continents',
-            'website' => $this->website,
         ]);
     }
 }

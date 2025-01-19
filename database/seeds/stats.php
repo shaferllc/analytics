@@ -16,14 +16,14 @@ class StatsSeeder extends Seeder
     public function run()
     {
         Stat::truncate();
-        $websites = DB::table('websites')->pluck('id');
+        $sites = DB::table('websites')->pluck('id');
         $now = Carbon::now();
 
-        foreach ($websites as $websiteId) {
+        foreach ($sites as $siteId) {
             // Seed visitors
             for ($i = 0; $i < 100; $i++) {
                 DB::table('visitors')->insert([
-                    'website_id' => $websiteId,
+                    'website_id' => $siteId,
                     'ip' => $this->generateRandomIp(),
                     'user_agent' => $this->generateRandomUserAgent(),
                     'created_at' => $now->subDays(rand(0, 30))->subHours(rand(0, 23)),
@@ -34,7 +34,7 @@ class StatsSeeder extends Seeder
             // Seed pageviews
             for ($i = 0; $i < 500; $i++) {
                 DB::table('pageviews')->insert([
-                    'website_id' => $websiteId,
+                    'website_id' => $siteId,
                     'url' => $this->generateRandomUrl(),
                     'created_at' => $now->subDays(rand(0, 30))->subHours(rand(0, 23)),
                     'updated_at' => $now,

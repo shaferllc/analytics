@@ -3,7 +3,7 @@
         <div class="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden">
                 <div class="p-6">
-                    @include('analytics::stats.header', ['website' => $website])
+                    @include('analytics::stats.header', ['website' => $site])
                 </div>
 
                 <div class="border-t border-gray-200 dark:border-gray-700">
@@ -26,5 +26,5 @@
         </div>
     </div>
 
-    @include('analytics::shared.sidebars.user', ['website' => $website])
+    @include('analytics::shared.sidebars.user', ['website' => $site])
 </x-app>

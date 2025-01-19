@@ -1,20 +1,21 @@
 static toggleDebug(value, mode = 'js') {
     if (mode === 'js') {
-        config.isDebug = value;
-        utils.debugLog('JavaScript Debug mode ' + (config.isDebug ? 'enabled' : 'disabled'));
+        TSMonitorConfig.isDebug = value;
+        utils.debugLog('JavaScript Debug mode ' + (TSMonitor.isDebug ? 'enabled' : 'disabled'));
     } else if (mode === 'browser') {
-        config.isBrowserDebug = value;
-        utils.debugLog('Browser Debug mode ' + (config.isBrowserDebug ? 'enabled' : 'disabled'));
-    }
-    this.toggleDebugElement(config.isDebug || config.isBrowserDebug);
-    if (config.isDebug || config.isBrowserDebug) {
-        this.logDebugInfo();
+        TSMonitorConfig.browserDebug = value;
+        utils.debugLog('Browser Debug mode ' + (TSMonitorConfig.browserDebug ? 'enabled' : 'disabled'));
+        this.toggleDebugElement(TSMonitorConfig.isDebug || TSMonitorConfig.browserDebug);
     }
 }
 
+static debugEnabled() {
+    return TSMonitorConfig.isDebug || TSMonitorConfig.browserDebug;
+}
+
 static toggleDebugElement(show) {
-    const debugElement = document.getElementById('rad-monitor-debug') || this.createDebugElement();
-    const toggleButton = document.getElementById('rad-monitor-debug-toggle') || this.createToggleButton();
+    const debugElement = document.getElementById('ts-monitor-debug') || this.createDebugElement();
+    const toggleButton = document.getElementById('ts-monitor-debug-toggle') || this.createToggleButton();
 
     const debugVisible = this.getDebugVisibility(show);
     this.updateDebugElementVisibility(debugElement, debugVisible);
@@ -22,13 +23,13 @@ static toggleDebugElement(show) {
 }
 static createDebugElement() {
     const debugElement = document.createElement('div');
-    debugElement.id = 'rad-monitor-debug';
+    debugElement.id = 'ts-monitor-debug';
     debugElement.style.cssText = `
         position: fixed;
         bottom: 40px;
-        right: 0;
-        width: 80%;
-        height: 80%;
+        right: 10px;
+        width: 400px;
+        height: 600px;
         background: rgba(0,0,0,0.9);
         color: white;
         overflow-y: auto;
@@ -41,7 +42,7 @@ static createDebugElement() {
         transition: all 0.3s ease;
         padding: 20px;
     `;
-    
+
     // Add advanced stats to the debug element
     debugElement.innerHTML = `
         <div style="color: #00bcd4; margin-bottom: 20px; position: sticky; top: 0; background: rgba(0,0,0,0.9); padding: 10px; z-index: 1; display: flex; align-items: center; justify-content: center;">
@@ -50,95 +51,95 @@ static createDebugElement() {
                 <path d="M2 17L12 22L22 17" stroke="#00bcd4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 <path d="M2 12L12 17L22 12" stroke="#00bcd4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            RadMonitor Debugger
-            <div id="rad-monitor-debug-stats-toggle" style="cursor: pointer; color: #007bff; margin-left: auto;" onclick="document.getElementById('rad-monitor-debug-stats').style.display = document.getElementById('rad-monitor-debug-stats').style.display === 'none' ? 'grid' : 'none';">
+            TSMonitor Debugger
+            <div id="ts-monitor-debug-stats-toggle" style="cursor: pointer; color: #007bff; margin-left: auto;" onclick="document.getElementById('ts-monitor-debug-stats').style.display = document.getElementById('ts-monitor-debug-stats').style.display === 'none' ? 'grid' : 'none';">
                 Toggle Stats ▼
             </div>
         </div>
-        <div id="rad-monitor-debug-stats" style="display: none; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; position: sticky; top: 50px; background: rgba(0,0,0,0.9); padding: 15px; z-index: 1;">
+        <div id="ts-monitor-debug-stats" style="display: none; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; position: sticky; top: 50px; background: rgba(0,0,0,0.9); padding: 15px; z-index: 1;">
             <div class="stat-group" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 10px;">
                 <h3 style="color: #007bff; cursor: pointer; margin-top: 0;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none';">Configuration ▼</h3>
                 <div style="display: none;">
-                    <div>Debug Mode: <span id="rad-monitor-debug-mode"></span></div>
-                    <div>Tracking Allowed: <span id="rad-monitor-tracking-allowed"></span></div>
-                    <div>Recording: <span id="rad-monitor-is-recording"></span></div>
-                    <div>Batch Interval: <span id="rad-monitor-batch-interval"></span></div>
-                    <div>Session Duration: <span id="rad-monitor-session-duration-config"></span></div>
+                    <div>Debug Mode: <span id="ts-monitor-debug-mode"></span></div>
+                    <div>Tracking Allowed: <span id="ts-monitor-tracking-allowed"></span></div>
+                    <div>Recording: <span id="ts-monitor-is-recording"></span></div>
+                    <div>Batch Interval: <span id="ts-monitor-batch-interval"></span></div>
+                    <div>Session Duration: <span id="ts-monitor-session-duration-config"></span></div>
                 </div>
             </div>
             <div class="stat-group" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 10px;">
                 <h3 style="color: #007bff; cursor: pointer; margin-top: 0;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none';">Performance ▼</h3>
                 <div style="display: none;">
-                    <div>Avg. Request Time: <span id="rad-monitor-avg-request-time">0ms</span></div>
-                    <div>Last Activity: <span id="rad-monitor-last-activity"></span></div>
-                    <div>Send Failures: <span id="rad-monitor-send-failures">0</span></div>
-                    <div>Memory Usage: <span id="rad-monitor-memory-usage">N/A</span></div>
-                    <div>CPU Usage: <span id="rad-monitor-cpu-usage">N/A</span></div>
+                    <div>Avg. Request Time: <span id="ts-monitor-avg-request-time">0ms</span></div>
+                    <div>Last Activity: <span id="ts-monitor-last-activity"></span></div>
+                    <div>Send Failures: <span id="ts-monitor-send-failures">0</span></div>
+                    <div>Memory Usage: <span id="ts-monitor-memory-usage">N/A</span></div>
+                    <div>CPU Usage: <span id="ts-monitor-cpu-usage">N/A</span></div>
                 </div>
             </div>
             <div class="stat-group" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 10px;">
                 <h3 style="color: #007bff; cursor: pointer; margin-top: 0;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none';">Request Stats ▼</h3>
                 <div style="display: none;">
-                    <div>Requests Sent: <span id="rad-monitor-requests-sent">0</span></div>
-                    <div>Events Tracked: <span id="rad-monitor-events-tracked">0</span></div>
-                    <div>Queue Length: <span id="rad-monitor-queue-length">0</span></div>
-                    <div>Batch Size: <span id="rad-monitor-batch-size">0</span></div>
-                    <div>Last Batch Time: <span id="rad-monitor-last-batch-time">N/A</span></div>
+                    <div>Requests Sent: <span id="ts-monitor-requests-sent">0</span></div>
+                    <div>Events Tracked: <span id="ts-monitor-events-tracked">0</span></div>
+                    <div>Queue Length: <span id="ts-monitor-queue-length">0</span></div>
+                    <div>Batch Size: <span id="ts-monitor-batch-size">0</span></div>
+                    <div>Last Batch Time: <span id="ts-monitor-last-batch-time">N/A</span></div>
                 </div>
             </div>
             <div class="stat-group" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 10px;">
                 <h3 style="color: #007bff; cursor: pointer; margin-top: 0;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none';">Session Info ▼</h3>
                 <div style="display: none;">
-                    <div>Session ID: <span id="rad-monitor-session-id"></span></div>
-                    <div>Session Duration: <span id="rad-monitor-session-duration">0s</span></div>
-                    <div>User ID: <span id="rad-monitor-user-id"></span></div>
-                    <div>Page Views: <span id="rad-monitor-page-views">0</span></div>
-                    <div>Engagement Score: <span id="rad-monitor-engagement-score">0</span></div>
+                    <div>Session ID: <span id="ts-monitor-session-id"></span></div>
+                    <div>Session Duration: <span id="ts-monitor-session-duration">0s</span></div>
+                    <div>User ID: <span id="ts-monitor-user-id"></span></div>
+                    <div>Page Views: <span id="ts-monitor-page-views">0</span></div>
+                    <div>Engagement Score: <span id="ts-monitor-engagement-score">0</span></div>
                 </div>
             </div>
             <div class="stat-group" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 10px;">
                 <h3 style="color: #007bff; cursor: pointer; margin-top: 0;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none';">Network Info ▼</h3>
                 <div style="display: none;">
-                    <div>Connection Type: <span id="rad-monitor-connection-type">Unknown</span></div>
-                    <div>Effective Bandwidth: <span id="rad-monitor-effective-bandwidth">Unknown</span></div>
-                    <div>RTT: <span id="rad-monitor-rtt">Unknown</span></div>
-                    <div>IP Address: <span id="rad-monitor-ip-address">Unknown</span></div>
-                    <div>Data Transferred: <span id="rad-monitor-data-transferred">0 KB</span></div>
+                    <div>Connection Type: <span id="ts-monitor-connection-type">Unknown</span></div>
+                    <div>Effective Bandwidth: <span id="ts-monitor-effective-bandwidth">Unknown</span></div>
+                    <div>RTT: <span id="ts-monitor-rtt">Unknown</span></div>
+                    <div>IP Address: <span id="ts-monitor-ip-address">Unknown</span></div>
+                    <div>Data Transferred: <span id="ts-monitor-data-transferred">0 KB</span></div>
                 </div>
             </div>
             <div class="stat-group" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 10px;">
                 <h3 style="color: #007bff; cursor: pointer; margin-top: 0;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none';">Browser Info ▼</h3>
                 <div style="display: none;">
-                    <div>User Agent: <span id="rad-monitor-user-agent"></span></div>
-                    <div>Screen Resolution: <span id="rad-monitor-screen-resolution"></span></div>
-                    <div>Device Pixel Ratio: <span id="rad-monitor-device-pixel-ratio"></span></div>
-                    <div>Browser Language: <span id="rad-monitor-browser-language"></span></div>
-                    <div>Cookies Enabled: <span id="rad-monitor-cookies-enabled"></span></div>
+                    <div>User Agent: <span id="ts-monitor-user-agent"></span></div>
+                    <div>Screen Resolution: <span id="ts-monitor-screen-resolution"></span></div>
+                    <div>Device Pixel Ratio: <span id="ts-monitor-device-pixel-ratio"></span></div>
+                    <div>Browser Language: <span id="ts-monitor-browser-language"></span></div>
+                    <div>Cookies Enabled: <span id="ts-monitor-cookies-enabled"></span></div>
                 </div>
             </div>
             <div class="stat-group" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 10px;">
                 <h3 style="color: #007bff; cursor: pointer; margin-top: 0;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none';">Page Performance ▼</h3>
                 <div style="display: none;">
-                    <div>Load Time: <span id="rad-monitor-load-time">0ms</span></div>
-                    <div>DOM Content Loaded: <span id="rad-monitor-dom-content-loaded">0ms</span></div>
-                    <div>First Paint: <span id="rad-monitor-first-paint">0ms</span></div>
-                    <div>First Contentful Paint: <span id="rad-monitor-first-contentful-paint">0ms</span></div>
-                    <div>Largest Contentful Paint: <span id="rad-monitor-largest-contentful-paint">0ms</span></div>
+                    <div>Load Time: <span id="ts-monitor-load-time">0ms</span></div>
+                    <div>DOM Content Loaded: <span id="ts-monitor-dom-content-loaded">0ms</span></div>
+                    <div>First Paint: <span id="ts-monitor-first-paint">0ms</span></div>
+                    <div>First Contentful Paint: <span id="ts-monitor-first-contentful-paint">0ms</span></div>
+                    <div>Largest Contentful Paint: <span id="ts-monitor-largest-contentful-paint">0ms</span></div>
                 </div>
             </div>
         </div>
-        <div id="rad-monitor-debug-log" style="margin-top: 20px; border-top: 1px solid #444; padding-top: 20px;">
+        <div id="ts-monitor-debug-log" style="margin-top: 20px; border-top: 1px solid #444; padding-top: 20px;">
             <h3 style="color: #007bff;">Debug Log</h3>
         </div>
     `;
-    
+
     document.body.appendChild(debugElement);
 
     const logObserver = new MutationObserver(() => {
-        const logElement = document.getElementById('rad-monitor-debug-log');
+        const logElement = document.getElementById('ts-monitor-debug-log');
         logElement.scrollTop = logElement.scrollHeight;
     });
-    logObserver.observe(document.getElementById('rad-monitor-debug-log'), { childList: true, subtree: true });
+    logObserver.observe(document.getElementById('ts-monitor-debug-log'), { childList: true, subtree: true });
 
     // Update stats every second
     setInterval(() => {
@@ -150,65 +151,64 @@ static createDebugElement() {
 static updateDebugStats() {
     // Get DOM elements once and cache them
     const elements = {
-        sessionId: document.getElementById('rad-monitor-session-id'),
-        sessionDuration: document.getElementById('rad-monitor-session-duration'),
-        userId: document.getElementById('rad-monitor-user-id'),
-        requestsSent: document.getElementById('rad-monitor-requests-sent'),
-        eventsTracked: document.getElementById('rad-monitor-events-tracked'),
-        queueLength: document.getElementById('rad-monitor-queue-length'),
-        avgRequestTime: document.getElementById('rad-monitor-avg-request-time'),
-        lastActivity: document.getElementById('rad-monitor-last-activity'),
-        sendFailures: document.getElementById('rad-monitor-send-failures'),
-        debugMode: document.getElementById('rad-monitor-debug-mode'),
-        trackingAllowed: document.getElementById('rad-monitor-tracking-allowed'),
-        isRecording: document.getElementById('rad-monitor-is-recording'),
-        batchInterval: document.getElementById('rad-monitor-batch-interval'),
-        sessionDurationConfig: document.getElementById('rad-monitor-session-duration-config'),
-        batchSize: document.getElementById('rad-monitor-batch-size'),
-        lastBatchTime: document.getElementById('rad-monitor-last-batch-time'),
-        pageViews: document.getElementById('rad-monitor-page-views'),
-        engagementScore: document.getElementById('rad-monitor-engagement-score'),
-        connectionType: document.getElementById('rad-monitor-connection-type'),
-        effectiveBandwidth: document.getElementById('rad-monitor-effective-bandwidth'),
-        rtt: document.getElementById('rad-monitor-rtt'),
-        userAgent: document.getElementById('rad-monitor-user-agent'),
-        screenResolution: document.getElementById('rad-monitor-screen-resolution'),
-        devicePixelRatio: document.getElementById('rad-monitor-device-pixel-ratio'),
-        browserLanguage: document.getElementById('rad-monitor-browser-language'),
-        cookiesEnabled: document.getElementById('rad-monitor-cookies-enabled'),
-        ipAddress: document.getElementById('rad-monitor-ip-address'),
-        dataTransferred: document.getElementById('rad-monitor-data-transferred'),
-        loadTime: document.getElementById('rad-monitor-load-time'),
-        domContentLoaded: document.getElementById('rad-monitor-dom-content-loaded'),
-        firstPaint: document.getElementById('rad-monitor-first-paint'),
-        firstContentfulPaint: document.getElementById('rad-monitor-first-contentful-paint'),
-        largestContentfulPaint: document.getElementById('rad-monitor-largest-contentful-paint')
+        sessionId: document.getElementById('ts-monitor-session-id'),
+        sessionDuration: document.getElementById('ts-monitor-session-duration'),
+        userId: document.getElementById('ts-monitor-user-id'),
+        requestsSent: document.getElementById('ts-monitor-requests-sent'),
+        eventsTracked: document.getElementById('ts-monitor-events-tracked'),
+        queueLength: document.getElementById('ts-monitor-queue-length'),
+        avgRequestTime: document.getElementById('ts-monitor-avg-request-time'),
+        lastActivity: document.getElementById('ts-monitor-last-activity'),
+        sendFailures: document.getElementById('ts-monitor-send-failures'),
+        debugMode: document.getElementById('ts-monitor-debug-mode'),
+        trackingAllowed: document.getElementById('ts-monitor-tracking-allowed'),
+        isRecording: document.getElementById('ts-monitor-is-recording'),
+        batchInterval: document.getElementById('ts-monitor-batch-interval'),
+        sessionDurationConfig: document.getElementById('ts-monitor-session-duration-config'),
+        batchSize: document.getElementById('ts-monitor-batch-size'),
+        lastBatchTime: document.getElementById('ts-monitor-last-batch-time'),
+        pageViews: document.getElementById('ts-monitor-page-views'),
+        engagementScore: document.getElementById('ts-monitor-engagement-score'),
+        connectionType: document.getElementById('ts-monitor-connection-type'),
+        effectiveBandwidth: document.getElementById('ts-monitor-effective-bandwidth'),
+        rtt: document.getElementById('ts-monitor-rtt'),
+        userAgent: document.getElementById('ts-monitor-user-agent'),
+        screenResolution: document.getElementById('ts-monitor-screen-resolution'),
+        devicePixelRatio: document.getElementById('ts-monitor-device-pixel-ratio'),
+        browserLanguage: document.getElementById('ts-monitor-browser-language'),
+        cookiesEnabled: document.getElementById('ts-monitor-cookies-enabled'),
+        ipAddress: document.getElementById('ts-monitor-ip-address'),
+        dataTransferred: document.getElementById('ts-monitor-data-transferred'),
+        loadTime: document.getElementById('ts-monitor-load-time'),
+        domContentLoaded: document.getElementById('ts-monitor-dom-content-loaded'),
+        firstPaint: document.getElementById('ts-monitor-first-paint'),
+        firstContentfulPaint: document.getElementById('ts-monitor-first-contentful-paint'),
+        largestContentfulPaint: document.getElementById('ts-monitor-largest-contentful-paint')
     };
 
     // Calculate session duration once
-    const sessionStart = parseInt(localStorage.getItem('rad_monitor_session_start'), 10);
+    const sessionStart = parseInt(localStorage.getItem('ts_monitor_session_start'), 10);
     const sessionDuration = Math.floor((Date.now() - sessionStart) / 1000);
 
     // Batch DOM updates
     requestAnimationFrame(() => {
         elements.sessionId.textContent = utils.getSessionId();
         elements.sessionDuration.textContent = `${sessionDuration}s`;
-        elements.userId.textContent = RadMonitor.instance.userId || 'Not set';
-        elements.requestsSent.textContent = RadMonitor.instance.requestsSent || 0;
-        elements.eventsTracked.textContent = RadMonitor.instance.eventsTracked || 0;
-        elements.queueLength.textContent = RadMonitor.instance.requestQueue.length;
-        elements.avgRequestTime.textContent = `${RadMonitor.instance.avgRequestTime || 0}ms`;
-        elements.lastActivity.textContent = new Date(RadMonitor.instance.lastActivity).toISOString();
-        elements.sendFailures.textContent = RadMonitor.instance.sendRequestFailures;
+        elements.userId.textContent =  TSMonitor.instance.userId || 'Not set';
+        elements.requestsSent.textContent = TSMonitor.instance.requestsSent || 0;
+        elements.eventsTracked.textContent = TSMonitor.instance.eventsTracked || 0;
+        elements.queueLength.textContent = TSMonitor.instance.requestQueue.length;
+        elements.avgRequestTime.textContent = `${TSMonitor.instance.avgRequestTime || 0}ms`;
+        elements.lastActivity.textContent = new Date(TSMonitor.instance.lastActivity).toISOString();
+        elements.sendFailures.textContent = TSMonitor.instance.sendRequestFailures;
         elements.debugMode.textContent = config.isDebug ? 'Enabled' : 'Disabled';
-        elements.trackingAllowed.textContent = RadMonitor.instance.isTrackingAllowed ? 'Yes' : 'No';
-        elements.isRecording.textContent = RadMonitor.instance.isRecording ? 'Active' : 'Inactive';
+        elements.isRecording.textContent = TSMonitor.instance.isRecording ? 'Active' : 'Inactive';
         elements.batchInterval.textContent = `${internalConfig.batchInterval}ms`;
         elements.sessionDurationConfig.textContent = `${internalConfig.SESSION_DURATION}ms`;
-        elements.batchSize.textContent = RadMonitor.instance.lastBatchSize || 0;
-        elements.lastBatchTime.textContent = RadMonitor.instance.lastBatchTime ? new Date(RadMonitor.instance.lastBatchTime).toISOString() : 'N/A';
-        elements.pageViews.textContent = RadMonitor.instance.pageViews || 0;
-        elements.engagementScore.textContent = RadMonitor.instance.engagementScore || 0;
+        elements.batchSize.textContent = TSMonitor.instance.lastBatchSize || 0;
+        elements.lastBatchTime.textContent = TSMonitor.instance.lastBatchTime ? new Date(TSMonitor.instance.lastBatchTime).toISOString() : 'N/A';
+        elements.pageViews.textContent = TSMonitor.instance.pageViews || 0;
+        elements.engagementScore.textContent = TSMonitor.instance.engagementScore || 0;
 
         // Network info
         if (navigator.connection) {
@@ -270,7 +270,7 @@ static updateDebugStats() {
 
 static createToggleButton() {
     const toggleButton = document.createElement('button');
-    toggleButton.id = 'rad-monitor-debug-toggle';
+    toggleButton.id = 'ts-monitor-debug-toggle';
     toggleButton.style.cssText = `
         position: fixed;
         bottom: 10px;
@@ -297,15 +297,15 @@ static createToggleButton() {
 }
 
 static handleToggleButtonClick() {
-    const debugElement = document.getElementById('rad-monitor-debug');
+    const debugElement = document.getElementById('ts-monitor-debug');
     const isVisible = debugElement.style.display === 'block';
-    RadMonitor.updateDebugElementVisibility(debugElement, !isVisible);
-    RadMonitor.updateToggleButtonState(this, !isVisible);
-    document.cookie = `rad_monitor_debug_visible=${!isVisible}; path=/; max-age=31536000`;
+    TSMonitor.updateDebugElementVisibility(debugElement, !isVisible);
+    TSMonitor.updateToggleButtonState(this, !isVisible);
+    document.cookie = `ts_monitor_debug_visible=${!isVisible}; path=/; max-age=31536000`;
 }
 
 static getDebugVisibility(show) {
-    const debugVisibleCookie = document.cookie.split('; ').find(row => row.startsWith('rad_monitor_debug_visible='));
+    const debugVisibleCookie = document.cookie.split('; ').find(row => row.startsWith('ts_monitor_debug_visible='));
     return debugVisibleCookie ? debugVisibleCookie.split('=')[1] === 'true' : show;
 }
 

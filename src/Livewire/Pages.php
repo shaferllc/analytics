@@ -4,46 +4,38 @@ namespace Shaferllc\Analytics\Livewire;
 
 use Livewire\Component;
 use Livewire\WithPagination;
-use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
 use Livewire\Attributes\Locked;
-use Shaferllc\Analytics\Models\Website;
+use App\Models\Site;
 use Shaferllc\Analytics\Traits\ComponentTrait;
 use Shaferllc\Analytics\Traits\DateRangeTrait;
 
+#[Title('Pages')]
 class Pages extends Component
 {
     use DateRangeTrait, WithPagination, ComponentTrait;
 
     #[Locked]
-    public Website $website;
-    public function mount(Website $website)
-    {
-        $this->range = $this->range();
-        $this->website = $website;   
-    }
+    public Site $site;
 
-    #[Layout('analytics::layouts.app')]
     public function render()
     {
+
         $data = $this->query(
-            type: 'page',
-            limit: null,
-            from: $this->range['from'],
-            to: $this->range['to'],
-            paginate: true,
+            category: 'page_data',
+            type: 'path',
+            from: $this->from,
+            to: $this->to,
         );
+
 
         return view('analytics::livewire.pages', [
             'data' => $data['data'],
             'first' => $data['first'],
             'last' => $data['last'],
             'total' => $data['total'],
-            'page' => 'pages',
+            'aggregates' => $data['aggregates'],
             'range' => $this->range,
-        ])->layoutData([
-            'range' => $this->range,
-            'page' => 'pages',
-            'website' => $this->website,
         ]);
     }
 }

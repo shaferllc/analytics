@@ -24,7 +24,7 @@ class EmailReportsCommand extends Command
             ->each(function ($user) use ($from, $to) {
                 if ($user->can('emailReports', ['App\Models\User'])) {
                     $stats = $this->getWebsiteStats($user, $from, $to);
-                    
+
                     if (!empty($stats)) {
                         $this->sendEmail($user, $stats, $from, $to);
                     }
@@ -42,7 +42,7 @@ class EmailReportsCommand extends Command
                 (clone $now)->endOfWeek()->subWeek()
             ];
         }
-        
+
         return [
             (clone $now)->startOfMonth()->subMonthsNoOverflow(1),
             (clone $now)->endOfMonth()->subMonthsNoOverflow(1)
@@ -62,11 +62,11 @@ class EmailReportsCommand extends Command
         ->where('user_id', $user->id)
         ->where('email', 1)
         ->get()
-        ->map(function ($website) {
+        ->map(function ($site) {
             return [
-                'domain' => $website->domain,
-                'visitors' => $website->visitors->sum('count') ?? 0,
-                'pageviews' => $website->pageviews->sum('count') ?? 0
+                'domain' => $site->domain,
+                'visitors' => $site->visitors->sum('count') ?? 0,
+                'pageviews' => $site->pageviews->sum('count') ?? 0
             ];
         })
         ->toArray();

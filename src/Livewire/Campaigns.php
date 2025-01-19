@@ -2,35 +2,28 @@
 
 namespace Shaferllc\Analytics\Livewire;
 
-use Carbon\Carbon;
 use Livewire\Component;
-use Illuminate\Support\Str;
-use Livewire\Attributes\On;
 use Livewire\WithPagination;
-use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
 use Livewire\Attributes\Locked;
-use Livewire\Attributes\Computed;
-use Shaferllc\Analytics\Models\Stat;
-use Shaferllc\Analytics\Models\Website;
+use App\Models\Site;
 use Shaferllc\Analytics\Traits\ComponentTrait;
 use Shaferllc\Analytics\Traits\DateRangeTrait;
 
+#[Title('Campaigns')]
 class Campaigns extends Component
 {
     use DateRangeTrait, WithPagination, ComponentTrait;
 
     #[Locked]
-    public Website $website;
-    public function mount(Website $website)
-    {
-        $this->website = $website;   
-    }
+    public Site $site;
 
-    #[Layout('analytics::layouts.app')]
+
     public function render()
     {
 
         $data = $this->query(
+            category: 'campaign',
             type: 'campaign',
             to: $this->to,
             from: $this->from
@@ -41,12 +34,8 @@ class Campaigns extends Component
             'first' => $data['first'],
             'last' => $data['last'],
             'total' => $data['total'],
-            'page' => 'campaigns',
+            'aggregates' => $data['aggregates'],
             'range' => $this->range,
-        ])->layoutData([
-            'range' => $this->range,
-            'page' => 'campaigns',
-            'website' => $this->website,
         ]);
     }
 }

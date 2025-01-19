@@ -3,20 +3,29 @@
         click: (e) => {
             const target = e.target;
             // Check if the click is within the debugger
-            if (target.closest('#rad-monitor-debug') || target.closest('#rad-monitor-debug-toggle')) {
+            if (target.closest('#ts-monitor-debug') || target.closest('#ts-monitor-debug-toggle')) {
                 return; // Don't process clicks within the debugger or its toggle
             }
             utils.debugLog('Click event detected');
-            RadMonitor.instance.queueRequest({
+            TSMonitor.instance.queueRequest({
                 name: 'click',
                 value: {
-                    tagName: target.tagName,
-                    id: target.id,
-                    className: target.className,
-                    innerText: target.innerText ? target.innerText.substring(0, 20) : '',
-                    href: target.href ? utils.anonymize.url(target.href) : ''
+                    ...(target.tagName && { tagName: target.tagName }),
+                    ...(target.id && { id: target.id }),
+                    ...(target.className && { className: target.className }),
+                    ...(target.innerText && { innerText: target.innerText.substring(0, 20) }),
+                    ...(target.href && { href: utils.anonymize.url(target.href) }),
+                    ...(target.name && { name: target.name }),
+                    ...(target.type && { type: target.type }),
+                    ...(target.value && { value: target.value }),
+                    ...(target.title && { title: target.title }),
+                    ...(target.alt && { alt: target.alt }),
+                    ...(target.dataset && { dataset: JSON.stringify(target.dataset) }),
+                    ...(target.getAttribute('aria-label') && { ariaLabel: target.getAttribute('aria-label') }),
+                    ...(target.getAttribute('role') && { role: target.getAttribute('role') }),
+                    path: utils.getDomPath(target),
+                    timestamp: new Date().toISOString()
                 }
             });
         },
-        // Add other event handlers here
     };

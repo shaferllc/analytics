@@ -10,16 +10,16 @@ class ValidateWebsitePasswordRule implements ValidationRule
     /**
      * @var Website
      */
-    private Website $website;
+    private Website $site;
 
     /**
      * Create a new rule instance.
      *
-     * @param Website $website
+     * @param Website $site
      */
-    public function __construct(Website $website)
+    public function __construct(Website $site)
     {
-        $this->website = $website;
+        $this->site = $site;
     }
 
     /**
@@ -32,7 +32,7 @@ class ValidateWebsitePasswordRule implements ValidationRule
      */
     public function validate($attribute, $value, $fail): void
     {
-        if ($this->website->password !== $value) {
+        if ($this->site->password !== $value) {
             $fail(__('The entered password is not correct.'));
         }
     }

@@ -10,10 +10,10 @@ trait TypesTrait {
 
     private function prepareCommonData(Request $request, $id)
     {
-        $website = Website::where('domain', $id)->firstOrFail();
+        $site = Website::where('domain', $id)->firstOrFail();
 
-        if ($this->statsGuard($website)) {
-            return ['view' => 'stats.password', 'website' => $website];
+        if ($this->statsGuard($site)) {
+            return ['view' => 'stats.password', 'website' => $site];
         }
 
         $range = $this->range();
@@ -26,22 +26,22 @@ trait TypesTrait {
         return compact('website', 'range', 'search', 'searchBy', 'sortBy', 'sort', 'perPage');
     }
 
-    private function getTotal($website, $range, $name)
+    private function getTotal($site, $range, $name)
     {
         return Stat::selectRaw('SUM(`count`) as `count`')
-            ->where([['website_id', '=', $website->id], ['name', '=', $name]])
+            ->where([['website_id', '=', $site->id], ['name', '=', $name]])
             ->whereBetween('date', [$range['from'], $range['to']])
             ->first();
     }
 
-    private function getPaginatedData($method, $website, $range, $search, $searchBy, $sortBy, $sort, $perPage)
+    private function getPaginatedData($method, $site, $range, $search, $searchBy, $sortBy, $sort, $perPage)
     {
-        $data = $this->$method($website, $range, $search, $searchBy, $sortBy, $sort)
+        $data = $this->$method($site, $range, $search, $searchBy, $sortBy, $sort)
             ->paginate($perPage)
             ->appends(['from' => $range['from'], 'to' => $range['to'], 'search' => $search, 'search_by' => $searchBy, 'sort_by' => $sortBy, 'sort' => $sort]);
 
-        $first = $this->$method($website, $range, $search, $searchBy, 'count', 'desc')->first();
-        $last = $this->$method($website, $range, $search, $searchBy, 'count', 'asc')->first();
+        $first = $this->$method($site, $range, $search, $searchBy, 'count', 'desc')->first();
+        $last = $this->$method($site, $range, $search, $searchBy, 'count', 'asc')->first();
 
         return compact('data', 'first', 'last');
     }
@@ -57,11 +57,11 @@ trait TypesTrait {
         if (isset($commonData['view'])) return view($commonData['view'], $commonData);
 
         extract($commonData);
-        $total = $this->getTotal($website, $range, 'page');
-        $paginatedData = $this->getPaginatedData('getPages', $website, $range, $search, $searchBy, $sortBy, $sort, $perPage);
+        $total = $this->getTotal($site, $range, 'page');
+        $paginatedData = $this->getPaginatedData('getPages', $site, $range, $search, $searchBy, $sortBy, $sort, $perPage);
 
         return $this->renderView('pages', [
-            'website' => $website,
+            'website' => $site,
             'range' => $range,
             'export' => 'stats.export.pages',
             'pages' => $paginatedData['data'],
@@ -77,13 +77,13 @@ trait TypesTrait {
         if (isset($commonData['view'])) return view($commonData['view'], $commonData);
 
         extract($commonData);
-        $total = $this->getTotal($website, $range, 'landing_page');
-        $paginatedData = $this->getPaginatedData('getLandingPages', $website, $range, $search, $searchBy, $sortBy, $sort, $perPage);
+        $total = $this->getTotal($site, $range, 'landing_page');
+        $paginatedData = $this->getPaginatedData('getLandingPages', $site, $range, $search, $searchBy, $sortBy, $sort, $perPage);
 
         return $this->renderView('landing-pages', [
-            'website' => $website,
+            'website' => $site,
             'range' => $range,
-            'export' => 'stats.export.landing_pages',
+            'export' => 'stats.export.landing-pages',
             'landingPages' => $paginatedData['data'],
             'first' => $paginatedData['first'],
             'last' => $paginatedData['last'],
@@ -98,13 +98,13 @@ trait TypesTrait {
 
         extract($commonData);
         $total = Stat::selectRaw('SUM(`count`) as `count`')
-            ->where([['website_id', '=', $website->id], ['name', '=', 'referrer'], ['value', '<>', $website->domain], ['value', '<>', '']])
+            ->where([['website_id', '=', $site->id], ['name', '=', 'referrer'], ['value', '<>', $site->domain], ['value', '<>', '']])
             ->whereBetween('date', [$range['from'], $range['to']])
             ->first();
-        $paginatedData = $this->getPaginatedData('getReferrers', $website, $range, $search, $searchBy, $sortBy, $sort, $perPage);
+        $paginatedData = $this->getPaginatedData('getReferrers', $site, $range, $search, $searchBy, $sortBy, $sort, $perPage);
 
         return $this->renderView('referrers', [
-            'website' => $website,
+            'website' => $site,
             'range' => $range,
             'export' => 'stats.export.referrers',
             'referrers' => $paginatedData['data'],
@@ -120,37 +120,37 @@ trait TypesTrait {
         if (isset($commonData['view'])) return view($commonData['view'], $commonData);
 
         extract($commonData);
-        $websites = $this->getSearchEnginesList();
+        $sites = $this->getSearchEnginesList();
         $total = Stat::selectRaw('SUM(`count`) as `count`')
-            ->where([['website_id', '=', $website->id], ['name', '=', 'referrer']])
-            ->whereIn('value', $websites)
+            ->where([['website_id', '=', $site->id], ['name', '=', 'referrer']])
+            ->whereIn('value', $sites)
             ->whereBetween('date', [$range['from'], $range['to']])
             ->first();
-        $paginatedData = $this->getPaginatedData('getSearchEngines', $website, $range, $search, $searchBy, $sortBy, $sort, $perPage);
+        $paginatedData = $this->getPaginatedData('getSearchEngines', $site, $range, $search, $searchBy, $sortBy, $sort, $perPage);
 
         return $this->renderView('search-engines', [
-            'website' => $website,
+            'website' => $site,
             'range' => $range,
-            'export' => 'stats.export.search_engines',
+            'export' => 'stats.export.search-engines',
             'searchEngines' => $paginatedData['data'],
             'first' => $paginatedData['first'],
             'last' => $paginatedData['last'],
             'total' => $total
         ]);
     }
-    
+
     public function countries(Request $request, $id)
     {
         $commonData = $this->prepareCommonData($request, $id);
         if (isset($commonData['view'])) return view($commonData['view'], $commonData);
 
         extract($commonData);
-        $total = $this->getTotal($website, $range, 'country');
-        $paginatedData = $this->getPaginatedData('getCountries', $website, $range, $search, $searchBy, $sortBy, $sort, $perPage);
-        $countriesChart = $this->getCountries($website, $range, $search, $searchBy, $sortBy, $sort)->get();
+        $total = $this->getTotal($site, $range, 'country');
+        $paginatedData = $this->getPaginatedData('getCountries', $site, $range, $search, $searchBy, $sortBy, $sort, $perPage);
+        $countriesChart = $this->getCountries($site, $range, $search, $searchBy, $sortBy, $sort)->get();
 
         return $this->renderView('countries', [
-            'website' => $website,
+            'website' => $site,
             'range' => $range,
             'export' => 'stats.export.countries',
             'countries' => $paginatedData['data'],
@@ -167,11 +167,11 @@ trait TypesTrait {
         if (isset($commonData['view'])) return view($commonData['view'], $commonData);
 
         extract($commonData);
-        $total = $this->getTotal($website, $range, 'city');
-        $paginatedData = $this->getPaginatedData('getCities', $website, $range, $search, $searchBy, $sortBy, $sort, $perPage);
+        $total = $this->getTotal($site, $range, 'city');
+        $paginatedData = $this->getPaginatedData('getCities', $site, $range, $search, $searchBy, $sortBy, $sort, $perPage);
 
         return $this->renderView('cities', [
-            'website' => $website,
+            'website' => $site,
             'range' => $range,
             'export' => 'stats.export.cities',
             'cities' => $paginatedData['data'],
@@ -187,11 +187,11 @@ trait TypesTrait {
         if (isset($commonData['view'])) return view($commonData['view'], $commonData);
 
         extract($commonData);
-        $total = $this->getTotal($website, $range, 'language');
-        $paginatedData = $this->getPaginatedData('getLanguages', $website, $range, $search, $searchBy, $sortBy, $sort, $perPage);
+        $total = $this->getTotal($site, $range, 'language');
+        $paginatedData = $this->getPaginatedData('getLanguages', $site, $range, $search, $searchBy, $sortBy, $sort, $perPage);
 
         return $this->renderView('languages', [
-            'website' => $website,
+            'website' => $site,
             'range' => $range,
             'export' => 'stats.export.languages',
             'languages' => $paginatedData['data'],
@@ -207,11 +207,11 @@ trait TypesTrait {
         if (isset($commonData['view'])) return view($commonData['view'], $commonData);
 
         extract($commonData);
-        $total = $this->getTotal($website, $range, 'os');
-        $paginatedData = $this->getPaginatedData('getOperatingSystems', $website, $range, $search, $searchBy, $sortBy, $sort, $perPage);
+        $total = $this->getTotal($site, $range, 'os');
+        $paginatedData = $this->getPaginatedData('getOperatingSystems', $site, $range, $search, $searchBy, $sortBy, $sort, $perPage);
 
         return $this->renderView('operating-systems', [
-            'website' => $website,
+            'website' => $site,
             'range' => $range,
             'export' => 'stats.export.operating_systems',
             'operatingSystems' => $paginatedData['data'],
@@ -227,11 +227,11 @@ trait TypesTrait {
         if (isset($commonData['view'])) return view($commonData['view'], $commonData);
 
         extract($commonData);
-        $total = $this->getTotal($website, $range, 'browser');
-        $paginatedData = $this->getPaginatedData('getBrowsers', $website, $range, $search, $searchBy, $sortBy, $sort, $perPage);
+        $total = $this->getTotal($site, $range, 'browser');
+        $paginatedData = $this->getPaginatedData('getBrowsers', $site, $range, $search, $searchBy, $sortBy, $sort, $perPage);
 
         return $this->renderView('browsers', [
-            'website' => $website,
+            'website' => $site,
             'range' => $range,
             'export' => 'stats.export.browsers',
             'browsers' => $paginatedData['data'],
@@ -247,11 +247,11 @@ trait TypesTrait {
         if (isset($commonData['view'])) return view($commonData['view'], $commonData);
 
         extract($commonData);
-        $total = $this->getTotal($website, $range, 'resolution');
-        $paginatedData = $this->getPaginatedData('getScreenResolutions', $website, $range, $search, $searchBy, $sortBy, $sort, $perPage);
+        $total = $this->getTotal($site, $range, 'resolution');
+        $paginatedData = $this->getPaginatedData('getScreenResolutions', $site, $range, $search, $searchBy, $sortBy, $sort, $perPage);
 
         return $this->renderView('screen-resolutions', [
-            'website' => $website,
+            'website' => $site,
             'range' => $range,
             'export' => 'stats.export.screen_resolutions',
             'screenResolutions' => $paginatedData['data'],
@@ -267,11 +267,11 @@ trait TypesTrait {
         if (isset($commonData['view'])) return view($commonData['view'], $commonData);
 
         extract($commonData);
-        $total = $this->getTotal($website, $range, 'device');
-        $paginatedData = $this->getPaginatedData('getDevices', $website, $range, $search, $searchBy, $sortBy, $sort, $perPage);
+        $total = $this->getTotal($site, $range, 'device');
+        $paginatedData = $this->getPaginatedData('getDevices', $site, $range, $search, $searchBy, $sortBy, $sort, $perPage);
 
         return $this->renderView('devices', [
-            'website' => $website,
+            'website' => $site,
             'range' => $range,
             'export' => 'stats.export.devices',
             'devices' => $paginatedData['data'],
@@ -287,11 +287,11 @@ trait TypesTrait {
         if (isset($commonData['view'])) return view($commonData['view'], $commonData);
 
         extract($commonData);
-        $total = $this->getTotal($website, $range, 'event');
-        $paginatedData = $this->getPaginatedData('getEvents', $website, $range, $search, $searchBy, $sortBy, $sort, $perPage);
+        $total = $this->getTotal($site, $range, 'event');
+        $paginatedData = $this->getPaginatedData('getEvents', $site, $range, $search, $searchBy, $sortBy, $sort, $perPage);
 
         return $this->renderView('events', [
-            'website' => $website,
+            'website' => $site,
             'range' => $range,
             'export' => 'stats.export.events',
             'events' => $paginatedData['data'],

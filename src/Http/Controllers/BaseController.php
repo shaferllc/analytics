@@ -37,31 +37,31 @@ class BaseController extends Controller
     /**
      * Guard the Stat.
      */
-    public function guard(Website $website):bool    
+    public function guard(Website $site):bool
     {
-        if ($website->privacy === 0) {
+        if ($site->privacy === 0) {
             return false;
         }
 
         $currentTeam = Auth::user()->currentTeam();
 
-        if ($website->privacy === 1 && ($currentTeam === null || $currentTeam !== $website->team_id)) {
+        if ($site->privacy === 1 && ($currentTeam === null || $currentTeam !== $site->team_id)) {
             abort(403);
         }
 
-        if ($website->privacy === 2 && !session(md5($website->domain)) && ($currentTeam === null || $currentTeam !== $website->team_id)) {
+        if ($site->privacy === 2 && !session(md5($site->domain)) && ($currentTeam === null || $currentTeam !== $site->team_id)) {
             return true;
         }
 
         return false;
     }
 
-    public function getPages(Website $website, array $range, array $params, string $sortBy = null, string $sort = null): Builder
+    public function getPages(Website $site, array $range, array $params, string $sortBy = null, string $sort = null): Builder
     {
 
         return Stat::selectRaw('`value`, SUM(`count`) as `count`')
         ->where([
-            ['website_id', '=', $website->id],
+            ['website_id', '=', $site->id],
             ['name', '=', 'page']
         ])
         ->when(Arr::has($params, 'search'), function ($query) use ($params) {
@@ -77,12 +77,12 @@ class BaseController extends Controller
      * @throws CannotInsertRecord
      */
     public function exportCSV(
-        Request $request, 
-        Website $website, 
-        string $title, 
-        array $range, 
-        string $name, 
-        string $count, 
+        Request $request,
+        Website $site,
+        string $title,
+        array $range,
+        string $name,
+        string $count,
         Collection $results
     ): Writer
     {
@@ -91,7 +91,7 @@ class BaseController extends Controller
         $content = Writer::createFromFileObject(new \SplTempFileObject);
 
         // Generate the header
-        $content->insertOne([__('Website'), $website->domain]);
+        $content->insertOne([__('Website'), $site->domain]);
         $content->insertOne([__('Type'), $title]);
         $content->insertOne([__('Interval'), $range['from'] . ' - ' . $range['to']]);
         $content->insertOne([__('Date'), $now->format(__('Y-m-d')) . ' ' . $now->format('H:i:s') . ' (' . $now->getOffsetString() . ')']);
@@ -99,10 +99,10 @@ class BaseController extends Controller
         $content->insertOne([__(' ')]);
 
         // Generate the summary
-        $content->insertOne([__('Visitors'), Stat::where([['website_id', '=', $website->id], ['name', '=', 'visitors']])
+        $content->insertOne([__('Visitors'), Stat::where([['website_id', '=', $site->id], ['name', '=', 'visitors']])
             ->whereBetween('date', [$range['from'], $range['to']])
             ->sum('count')]);
-        $content->insertOne([__('Pageviews'), Stat::where([['website_id', '=', $website->id], ['name', '=', 'pageviews']])
+        $content->insertOne([__('Pageviews'), Stat::where([['website_id', '=', $site->id], ['name', '=', 'pageviews']])
             ->whereBetween('date', [$range['from'], $range['to']])
             ->sum('count')]);
         $content->insertOne([__(' ')]);
@@ -119,7 +119,7 @@ class BaseController extends Controller
         return response((string) $content, 200, [
             'Content-Type' => 'text/csv',
             'Content-Transfer-Encoding' => 'binary',
-            'Content-Disposition' => 'attachment; filename="' . formatTitle([$website->domain, $title, $range['from'], $range['to'], config('settings.title')]) . '.csv"'
+            'Content-Disposition' => 'attachment; filename="' . formatTitle([$site->domain, $title, $range['from'], $range['to'], config('settings.title')]) . '.csv"'
         ]);
     }
 }

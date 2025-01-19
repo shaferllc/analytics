@@ -1,12 +1,12 @@
 <div>
-    
+
     include('analytics::livewire.domain.partials.header')
     <!-- Main Tabs -->
     <div x-data="{ activeTab: 'certificates' }" class="mb-8">
         include('analytics::livewire.domain.partials.tabs')
 
         <!-- Search & Filters -->
-        
+
 
         <!-- Certificates Tab Content -->
         <div x-show="activeTab === 'certificates'" x-cloak class="mt-6" wire:loading.class="opacity-50">
@@ -25,7 +25,7 @@
                             <h2 class="text-3xl font-bold">SSL Certificate Management</h2>
                             <p class="mt-2 text-emerald-100">Monitor and manage SSL certificates across your domains</p>
                             <div class="flex items-center mt-4 space-x-3">
-                                <span class="px-3 py-1 text-sm bg-white/20 rounded-full">{{ $website->domain }}</span>
+                                <span class="px-3 py-1 text-sm bg-white/20 rounded-full">{{ $site->domain }}</span>
                                 <span class="px-3 py-1 text-sm bg-white/20 rounded-full">{{ count($certificates ?? []) }} Certificates</span>
                                 <span class="px-3 py-1 text-sm bg-white/20 rounded-full">Last Scan: {{ now()->format('M d, Y') }}</span>
                             </div>
@@ -49,7 +49,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="mb-8">
                 @include('analytics::livewire.partials.certificates.filters')
             </div>

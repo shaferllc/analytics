@@ -16,7 +16,7 @@ class StatResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'website_id' => $this->website_id,
+            'website_id' => $this->site_id,
             'name' => $this->name,
             'count' => $this->count,
             'date' => $this->date->toDateString(),

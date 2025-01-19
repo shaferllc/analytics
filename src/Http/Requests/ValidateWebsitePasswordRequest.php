@@ -11,7 +11,7 @@ class ValidateWebsitePasswordRequest extends FormRequest
     /**
      * @var Website
      */
-    protected $website;
+    protected $site;
 
     /**
      * Determine if the user is authorized to make this request.
@@ -20,9 +20,9 @@ class ValidateWebsitePasswordRequest extends FormRequest
      */
     public function authorize()
     {
-        $this->website = Website::firstWhere('domain', $this->route('id'));
+        $this->site = Website::firstWhere('domain', $this->route('id'));
 
-        return $this->website !== null;
+        return $this->site !== null;
     }
 
     /**
@@ -33,7 +33,7 @@ class ValidateWebsitePasswordRequest extends FormRequest
     public function rules()
     {
         return [
-            'password' => ['required', new ValidateWebsitePasswordRule($this->website)]
+            'password' => ['required', new ValidateWebsitePasswordRule($this->site)]
         ];
     }
 }

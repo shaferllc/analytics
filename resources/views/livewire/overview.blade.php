@@ -1,63 +1,99 @@
-<div class="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-blue-800 text-white">
-    <div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        @include('livewire.partials.tabs')
-        @include('livewire.websites.header')
-        <div class="flex-1 bg-gray-700 rounded-2xl shadow-lg border border-gray-600 hover:border-blue-500 transform hover:-translate-y-1 transition-all duration-300 p-4">
-            <div class="flex items-center justify-between gap-4 mb-4">
-                <h3 class="text-xl font-bold text-white flex items-center">
-                    <x-icon name="heroicon-o-presentation-chart-line" class="w-6 h-6 mr-2" />
-                    {{ __('Overview') }}
-                </h3>
+<x-site :site="$site">
+
+<div class="space-y-4">
+        <x-analytics::breadcrumbs :breadcrumbs="[
+            [
+                'url' => route('sites.analytics.overview', ['site' => $site->id]),
+                'label' => __('Dashboard'),
+            ],
+            [
+                'url' => route('sites.analytics.acquisitions', ['site' => $site->id]),
+                'label' => __('Acquisitions'),
+            ],
+            [
+                'url' => route('sites.analytics.sessions', ['site' => $site->id]),
+                'label' => __('Sessions'),
+            ]
+        ]" />
+        @include('analytics::livewire.partials.nav')
+
+        <div class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <x-analytics::stat-card
+                    :title="__('Total Visitors')"
+                    :value="number_format($totalVisitors)"
+                    :oldValue="$totalVisitorsOld"
+                    :icon="'heroicon-o-users'"
+                    :color="'indigo'"
+                />
+
+                <x-analytics::stat-card
+                    :title="__('Total Pageviews')"
+                    :value="number_format($totalPageviews)"
+                    :oldValue="$totalPageviewsOld"
+                    :icon="'heroicon-o-document-text'"
+                    :color="'indigo'"
+                />
+
+                <x-analytics::stat-card
+                    :title="__('Unique Pages')"
+                    :value="number_format($totalPages)"
+                    :icon="'heroicon-o-document-duplicate'"
+                    :color="'indigo'"
+                />
+
+                <x-analytics::stat-card
+                    :title="__('Avg Session Duration')"
+                    :value="gmdate('H:i:s', $avgSessionDuration)"
+                    :icon="'heroicon-o-clock'"
+                    :color="'indigo'"
+                />
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
-                <div class="bg-gray-800 rounded-lg p-4 shadow-md">
-                    <!-- <div class="flex items-center gap-2">
-                        <div class="block align-items-center justify-content-center bg-primary rounded w-4 h-4 flex-shrink-0" id="visitors-legend"></div>
-                        <h3 class="text-sm font-bold text-blue-400">{{ __('Visitors') }}</h3>
-                    </div> -->
-
-                    <!-- <div class="text-2xl font-bold text-white">{{ number_format($totalVisitors, 0, __('.'), __(',')) }}</div> -->
-                    @include('analytics::livewire.partials.growth', ['growthCurrent' => $totalVisitors, 'growthPrevious' => $totalVisitorsOld, 'type' => 'visitors'])
-                </div>
-
-                <!-- Pageviews -->
-                <div class="bg-gray-800 rounded-lg p-4 shadow-md">
-                    <!-- <div class="flex items-center gap-2">
-                        <div class="block align-items-center justify-content-center bg-secondary rounded w-4 h-4 flex-shrink-0" id="pageviews-legend"></div>
-                        <h3 class="text-sm font-bold text-blue-400">{{ __('Pageviews') }}</h3>
-                    </div> -->
-
-                    <!-- <div class="text-2xl font-bold text-white">{{ number_format($totalPageviews, 0, __('.'), __(',')) }}</div> -->
-                    @include('analytics::livewire.partials.growth', ['growthCurrent' => $totalPageviews, 'growthPrevious' => $totalPageviewsOld, 'type' => 'pageviews'])
-                </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <x-analytics::chart-card :title="__('Visitors')" :data="$visitorsMap" />
+                <x-analytics::chart-card :title="__('Pageviews')" :data="$pageviewsMap" />
             </div>
-        </div>
 
-        <!-- Graph -->
-        @include('analytics::livewire.partials.dashboard.graph')
+            <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                <x-analytics::list-card
+                    :title="__('Top Pages')"
+                    :items="$pages"
+                    :total="$totalPages"
+                    :route="route('sites.analytics.pages', ['site' => $site->id])"
+                />
 
+                <x-analytics::list-card
+                    :title="__('Top Referrers')"
+                    :items="$referrers"
+                    :total="$totalReferrers"
+                    :route="route('sites.analytics.referrers', ['site' => $site->id])"
+                />
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <x-analytics::list-card
+                    :title="__('Top Countries')"
+                    :items="$countries"
+                    :route="route('sites.analytics.countries', ['site' => $site->id])"
+                />
 
-            <!-- Pages -->
-            include('analytics::livewire.partials.dashboard.pages')
+                <x-analytics::list-card
+                    :title="__('Top Browsers')"
+                    :items="$browsers"
+                    :route="route('sites.analytics.browsers', ['site' => $site->id])"
+                />
 
-            <!-- Referrers -->
-            include('analytics::livewire.partials.dashboard.referrers')
+                <x-analytics::list-card
+                    :title="__('Top Operating Systems')"
+                    :items="$operatingSystems"
+                    :route="route('sites.analytics.operating-systems', ['site' => $site->id])"
+                />
 
-            <!-- Countries -->
-            include('analytics::livewire.partials.dashboard.countries')
-
-            <!-- Browsers -->
-            include('analytics::livewire.partials.dashboard.browsers')
-
-            <!-- Operating systems -->
-            include('analytics::livewire.partials.dashboard.operating-systems')
-
-            <!-- Events -->
-            include('analytics::livewire.partials.dashboard.events')
-
+                <x-analytics::list-card
+                    :title="__('Top Events')"
+                    :items="$events"
+                    :route="route('sites.analytics.events', ['site' => $site->id])"
+                />
+            </div>
         </div>
     </div>
-</div>
+</x-website>
