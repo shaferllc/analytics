@@ -4,7 +4,7 @@ namespace Shaferllc\Analytics\Http\Resources;
 
 use Illuminate\Http\Resources\Json\ResourceCollection;
 
-class SessionsResource extends ResourceCollection
+class SessionsCollection extends ResourceCollection
 {
 
     public $preserveKeys = true;
