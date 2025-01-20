@@ -1,6 +1,5 @@
 <?php
 
-namespace Database\Factories;
 
 use Shaferllc\Analytics\Models\Stat;
 use Illuminate\Database\Eloquent\Factories\Factory;
