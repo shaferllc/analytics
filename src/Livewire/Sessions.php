@@ -2,13 +2,14 @@
 
 namespace Shaferllc\Analytics\Livewire;
 
+use App\Models\Site;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Locked;
-use App\Models\Site;
-use Shaferllc\Analytics\Traits\DateRangeTrait;
+use Illuminate\Support\Benchmark;
 use Shaferllc\Analytics\Traits\ComponentTrait;
+use Shaferllc\Analytics\Traits\DateRangeTrait;
 
 #[Title('Sessions')]
 class Sessions extends Component

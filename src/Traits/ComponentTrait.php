@@ -3,6 +3,7 @@
 namespace Shaferllc\Analytics\Traits;
 
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Benchmark;
 use Livewire\Attributes\Computed;
 
 trait ComponentTrait
@@ -37,7 +38,6 @@ trait ComponentTrait
      */
     public function sessions(?Carbon $from = null, ?Carbon $to = null): array
     {
-
 
         $visitors = $this->site->visitors()
             ->with(['pages'])
@@ -89,7 +89,6 @@ trait ComponentTrait
                             // page visitor data
                             'visitor_id' => $page->page_visitor->visitor_id,
                             'page_id' => $page->page_visitor->page_id,
-                            'site_id' => $page->page_visitor->site_id,
                             'start_session_at' => $page->page_visitor->start_session_at,
                             'end_session_at' => $page->page_visitor->end_session_at,
                             'total_duration_seconds' => $page->page_visitor->total_duration_seconds,
@@ -132,9 +131,12 @@ trait ComponentTrait
                 ];
             });
 
+       ;
         // Add global aggregates
         $allVisitors = $this->site->visitors()->with(['pages'])->get();
+
         $globalStats = [
+            // Session Overview
             'total_sessions' => (int)$allVisitors->count(),
             'total_pageviews' => (int)$allVisitors->sum(function($visitor) {
                 return $visitor->pages->sum('page_visitor.total_visits');
@@ -155,21 +157,66 @@ trait ComponentTrait
                 // If visitor viewed more than 1 page, bounce rate is 0%
                 return $visitor->pages->count() === 1 ? 100 : 0;
             }),
-            // Session metrics
+
+
+            // Today
             'sessions_today' => (function() use ($allVisitors) {
                 $visitors = $allVisitors->filter(function($visitor) {
-                    // dump($visitor->pages->first()->page_visitor->first_visit_at);
                     return $visitor->pages->contains(function($page) {
                         return $page->page_visitor->first_visit_at >= Carbon::today();
                     });
                 });
                 return (int)$visitors->count();
             })(),
+
+            'peak_hour_today' => $allVisitors->flatMap->pages
+                ->where('page_visitor.first_visit_at', '>=', Carbon::today())
+                ->groupBy(function($page) {
+                    return Carbon::parse($page->page_visitor->first_visit_at)->format('h A');
+                })
+                ->map->count()
+                ->sortDesc()
+                ->keys()
+                ->first(),
+
+            'pageviews_today' => (function() use ($allVisitors) {
+                return (int)$allVisitors
+                    ->flatMap->pages
+                    ->filter(function($page) {
+                        return $page->page_visitor->last_visit_at >= Carbon::today();
+                    })
+                    ->sum('page_visitor.total_visits');
+            })(),
+
+            'avg_session_duration_today' => $this->formatDuration((int)$allVisitors
+                ->filter(function($visitor) {
+                    return $visitor->pages->contains(function($page) {
+                        return $page->page_visitor->last_visit_at >= Carbon::today();
+                    });
+                })
+                ->avg(function($visitor) {
+                    $lastVisit = $visitor->pages->max('page_visitor.last_visit_at');
+                    $firstVisit = $visitor->pages->min('page_visitor.first_visit_at');
+                    return $lastVisit && $firstVisit ? Carbon::parse($firstVisit)->diffInSeconds(Carbon::parse($lastVisit)) : 0;
+                })),
+
+            'bounce_rate_today' => (int)$allVisitors
+                ->filter(function($visitor) {
+                    return $visitor->pages->contains(function($page) {
+                        return $page->page_visitor->last_visit_at >= Carbon::today();
+                    });
+                })
+                ->avg(function($visitor) {
+                    return $visitor->pages->count() === 1 ? 100 : 0;
+                }),
+
+            // This week
+
             'sessions_yesterday' => (function() use ($allVisitors) {
                 $visitors = $allVisitors->filter(function($visitor) {
                     return $visitor->pages->contains(function($page) {
-                        return $page->page_visitor->first_visit_at >= Carbon::yesterday() &&
-                               $page->page_visitor->first_visit_at < Carbon::today();
+                        return $page->page_visitor->last_visit_at >= Carbon::yesterday() &&
+                               $page->page_visitor->last_visit_at < Carbon::today();
                     });
                 });
                 return (int)$visitors->count();
@@ -177,108 +224,47 @@ trait ComponentTrait
             'sessions_this_week' => (function() use ($allVisitors) {
                 $visitors = $allVisitors->filter(function($visitor) {
                     return $visitor->pages->contains(function($page) {
-                        return $page->page_visitor->first_visit_at >= Carbon::now()->startOfWeek();
-                    });
-                });
-                return (int)$visitors->count();
-            })(),
-            'sessions_last_week' => (function() use ($allVisitors) {
-                $visitors = $allVisitors->filter(function($visitor) {
-                    return $visitor->pages->contains(function($page) {
-                        return $page->page_visitor->first_visit_at >= Carbon::now()->subWeek()->startOfWeek() &&
-                               $page->page_visitor->first_visit_at < Carbon::now()->startOfWeek();
-                    });
-                });
-                return (int)$visitors->count();
-            })(),
-            'sessions_this_month' => (function() use ($allVisitors) {
-                $visitors = $allVisitors->filter(function($visitor) {
-                    return $visitor->pages->contains(function($page) {
-                        return $page->page_visitor->first_visit_at >= Carbon::now()->startOfMonth();
-                    });
-                });
-                return (int)$visitors->count();
-            })(),
-            'sessions_last_month' => (function() use ($allVisitors) {
-                $visitors = $allVisitors->filter(function($visitor) {
-                    return $visitor->pages->contains(function($page) {
-                        return $page->page_visitor->first_visit_at >= Carbon::now()->subMonth()->startOfMonth() &&
-                               $page->page_visitor->first_visit_at < Carbon::now()->startOfMonth();
-                    });
-                });
-                return (int)$visitors->count();
-            })(),
-            'sessions_this_year' => (function() use ($allVisitors) {
-                $visitors = $allVisitors->filter(function($visitor) {
-                    return $visitor->pages->contains(function($page) {
-                        return $page->page_visitor->first_visit_at >= Carbon::now()->startOfYear();
-                    });
-                });
-                return (int)$visitors->count();
-            })(),
-            'sessions_last_year' => (function() use ($allVisitors) {
-                $visitors = $allVisitors->filter(function($visitor) {
-                    return $visitor->pages->contains(function($page) {
-                        return $page->page_visitor->first_visit_at >= Carbon::now()->subYear()->startOfYear() &&
-                               $page->page_visitor->first_visit_at < Carbon::now()->startOfYear();
+                        return $page->page_visitor->last_visit_at >= Carbon::now()->startOfWeek();
                     });
                 });
                 return (int)$visitors->count();
             })(),
 
-
-
-            // // Top users and sessions
-            'top_sessions_today' => $allVisitors->filter(function($visitor) {
-                    foreach ($visitor->pages as $page) {
-                        if ($page->page_visitor->first_visit_at >= Carbon::today()) {
-                            return true;
-                        }
-                    }
-                    return false;
-                })
-                ->sortByDesc(function($visitor) {
-                    $totalVisits = 0;
-                    foreach ($visitor->pages as $page) {
-                        $totalVisits += $page->page_visitor->total_visits;
-                    }
-                    return $totalVisits;
-                })
-                ->take(10)
-                ->values(),
-            'top_users_all_time' => $allVisitors
-                ->unique('visitor_id')
-                ->sortByDesc(function($visitor) {
-                    return $visitor->pages->sum('page_visitor.total_visits');
-                })
-                ->take(10)
-                ->values(),
-            'top_session_pages_today' => $allVisitors->flatMap->pages
-                ->where('page_visitor.first_visit_at', '>=', Carbon::today())
-                ->groupBy('path')
-                ->map(function ($pages) {
-                    return [
-                        'path' => $pages->first()->path,
-                        'title' => $pages->first()->meta_data->title,
-                        'visits' => (int)$pages->sum('page_visitor.total_visits')
-                    ];
-                })
-                ->sortByDesc('visits')
-                ->take(10)
-                ->values(),
             'peak_hour_this_week' => $allVisitors->flatMap->pages
                 ->filter(function($page) {
-                    return $page->page_visitor->first_visit_at >= Carbon::now()->startOfWeek();
+                    return $page->page_visitor->last_visit_at >= Carbon::now()->startOfWeek();
                 })
                 ->groupBy(function($page) {
-                    return Carbon::parse($page->page_visitor->first_visit_at)->format('H');
+                    return Carbon::parse($page->page_visitor->last_visit_at)->format('H');
                 })
                 ->map->count()
                 ->sortDesc()
                 ->keys()
                 ->first(),
+            'avg_time_per_visit_this_week' => (int)($allVisitors
+                ->filter(function($visitor) {
+                    return $visitor->pages->contains(function($page) {
+                        return $page->page_visitor->last_visit_at >= Carbon::now()->startOfWeek();
+                    });
+                })
+                ->avg(function($visitor) {
+                    $lastVisit = $visitor->pages->max('page_visitor.last_visit_at');
+                    $firstVisit = $visitor->pages->min('page_visitor.first_visit_at');
+                    return $lastVisit && $firstVisit ? Carbon::parse($firstVisit)->diffInSeconds(Carbon::parse($lastVisit)) : 0;
+                })),
 
-            // Additional metrics
+            'bounce_rate_this_week' => (int)$allVisitors
+                ->filter(function($visitor) {
+                    return $visitor->pages->contains(function($page) {
+                        return $page->page_visitor->last_visit_at >= Carbon::now()->startOfWeek();
+                    });
+                })
+                ->avg(function($visitor) {
+                    return $visitor->pages->count() === 1 ? 100 : 0;
+                }),
+
+
+            // Engagement metrics
             'avg_time_per_visit' => $this->formatDuration($allVisitors->avg(function($visitor) {
                 // Calculate total time spent across all pages for this visitor
                 $totalTimeSpent = $visitor->pages->sum(function($page) {
@@ -301,101 +287,192 @@ trait ComponentTrait
                 $totalVisits = $visitor->pages->sum('page_visitor.total_visits');
                 return $totalVisits > 0 ? min(100, ($totalTimeSpent / $totalVisits) * 10) : 0;
             }),
-            'peak_hour_today' => $allVisitors->flatMap->pages
-                ->where('page_visitor.first_visit_at', '>=', Carbon::today())
-                ->groupBy(function($page) {
-                    return Carbon::parse($page->page_visitor->first_visit_at)->format('H');
-                })
-                ->map->count()
-                ->sortDesc()
-                ->keys()
-                ->first(),
+            'pages_per_session' => (int)$allVisitors->avg(function($visitor) {
+                return $visitor->pages->count();
+            }),
+            'avg_session_depth' => (int)$allVisitors->avg(function($visitor) {
+                $totalPageViews = $visitor->pages->sum('page_visitor.total_visits');
+                $totalSessions = $visitor->pages->max(function($page) {
+                    return $page->page_visitor->total_visits;
+                });
+                return $totalSessions > 0 ? $totalPageViews / $totalSessions : 0;
+            }),
+
+
+            // 'sessions_last_week' => (function() use ($allVisitors) {
+            //     $visitors = $allVisitors->filter(function($visitor) {
+            //         return $visitor->pages->contains(function($page) {
+            //             return $page->page_visitor->first_visit_at >= Carbon::now()->subWeek()->startOfWeek() &&
+            //                    $page->page_visitor->first_visit_at < Carbon::now()->startOfWeek();
+            //         });
+            //     });
+            //     return (int)$visitors->count();
+            // })(),
+            // 'sessions_this_month' => (function() use ($allVisitors) {
+            //     $visitors = $allVisitors->filter(function($visitor) {
+            //         return $visitor->pages->contains(function($page) {
+            //             return $page->page_visitor->first_visit_at >= Carbon::now()->startOfMonth();
+            //         });
+            //     });
+            //     return (int)$visitors->count();
+            // })(),
+            // 'sessions_last_month' => (function() use ($allVisitors) {
+            //     $visitors = $allVisitors->filter(function($visitor) {
+            //         return $visitor->pages->contains(function($page) {
+            //             return $page->page_visitor->first_visit_at >= Carbon::now()->subMonth()->startOfMonth() &&
+            //                    $page->page_visitor->first_visit_at < Carbon::now()->startOfMonth();
+            //         });
+            //     });
+            //     return (int)$visitors->count();
+            // })(),
+            // 'sessions_this_year' => (function() use ($allVisitors) {
+            //     $visitors = $allVisitors->filter(function($visitor) {
+            //         return $visitor->pages->contains(function($page) {
+            //             return $page->page_visitor->first_visit_at >= Carbon::now()->startOfYear();
+            //         });
+            //     });
+            //     return (int)$visitors->count();
+            // })(),
+            // 'sessions_last_year' => (function() use ($allVisitors) {
+            //     $visitors = $allVisitors->filter(function($visitor) {
+            //         return $visitor->pages->contains(function($page) {
+            //             return $page->page_visitor->first_visit_at >= Carbon::now()->subYear()->startOfYear() &&
+            //                    $page->page_visitor->first_visit_at < Carbon::now()->startOfYear();
+            //         });
+            //     });
+            //     return (int)$visitors->count();
+            // })(),
+
+
+
+            // // Top users and sessions
+            // 'top_sessions_today' => $allVisitors->filter(function($visitor) {
+            //         foreach ($visitor->pages as $page) {
+            //             if ($page->page_visitor->first_visit_at >= Carbon::today()) {
+            //                 return true;
+            //             }
+            //         }
+            //         return false;
+            //     })
+            //     ->sortByDesc(function($visitor) {
+            //         $totalVisits = 0;
+            //         foreach ($visitor->pages as $page) {
+            //             $totalVisits += $page->page_visitor->total_visits;
+            //         }
+            //         return $totalVisits;
+            //     })
+            //     ->take(10)
+            //     ->values(),
+            // 'top_users_all_time' => $allVisitors
+            //     ->unique('visitor_id')
+            //     ->sortByDesc(function($visitor) {
+            //         return $visitor->pages->sum('page_visitor.total_visits');
+            //     })
+            //     ->take(10)
+            //     ->values(),
+            // 'top_session_pages_today' => $allVisitors->flatMap->pages
+            //     ->where('page_visitor.first_visit_at', '>=', Carbon::today())
+            //     ->groupBy('path')
+            //     ->map(function ($pages) {
+            //         return [
+            //             'path' => $pages->first()->path,
+            //             'title' => $pages->first()->meta_data->title,
+            //             'visits' => (int)$pages->sum('page_visitor.total_visits')
+            //         ];
+            //     })
+            //     ->sortByDesc('visits')
+            //     ->take(10)
+            //     ->values(),
+
+
+
+
             // Most active days of week
-            'most_active_day' => $allVisitors->flatMap->pages
-                ->groupBy(function($page) {
-                    return Carbon::parse($page->page_visitor->first_visit_at)->format('l');
-                })
-                ->map->count()
-                ->sortDesc()
-                ->keys()
-                ->first(),
+            // 'most_active_day' => $allVisitors->flatMap->pages
+            //     ->groupBy(function($page) {
+            //         return Carbon::parse($page->page_visitor->first_visit_at)->format('l');
+            //     })
+            //     ->map->count()
+            //     ->sortDesc()
+            //     ->keys()
+            //     ->first(),
 
-            // Average session depth (pages per session)
-            'avg_session_depth' => round($allVisitors->avg(function($visitor) {
-                return $visitor->pages->unique('id')->count();
-            }), 1),
+            // // Average session depth (pages per session)
+            // 'avg_session_depth' => round($allVisitors->avg(function($visitor) {
+            //     return $visitor->pages->unique('id')->count();
+            // }), 1),
 
-            // Exit rate - percentage of sessions that end on each page
-            'exit_rate' => round($allVisitors->avg(function($visitor) {
-                $lastPage = $visitor->pages->sortBy('page_visitor.last_visit_at')->last();
-                return $lastPage ? 100 : 0;
-            }), 1),
+            // // Exit rate - percentage of sessions that end on each page
+            // 'exit_rate' => round($allVisitors->avg(function($visitor) {
+            //     $lastPage = $visitor->pages->sortBy('page_visitor.last_visit_at')->last();
+            //     return $lastPage ? 100 : 0;
+            // }), 1),
 
-            // New vs returning visitor ratio
-            'new_visitor_ratio' => round(($allVisitors->filter(function($visitor) {
-                return $visitor->pages->sum('page_visitor.total_visits') === 1;
-            })->count() / max(1, $allVisitors->count())) * 100, 1),
+            // // New vs returning visitor ratio
+            // 'new_visitor_ratio' => round(($allVisitors->filter(function($visitor) {
+            //     return $visitor->pages->sum('page_visitor.total_visits') === 1;
+            // })->count() / max(1, $allVisitors->count())) * 100, 1),
 
-            // Average time between visits (for returning visitors)
-            'avg_time_between_visits' => $this->formatDuration((int)$allVisitors
-                ->filter(function($visitor) {
-                    return $visitor->pages->sum('page_visitor.total_visits') > 1;
-                })
-                ->avg(function($visitor) {
-                    $visits = $visitor->pages->pluck('page_visitor.first_visit_at')->sort();
-                    if($visits->count() < 2) return 0;
-                    return $visits->zip($visits->slice(1))
-                        ->map(function($pair) {
-                            return Carbon::parse($pair[0])->diffInSeconds(Carbon::parse($pair[1]));
-                        })
-                        ->avg();
-                })),
-            // Average engagement time per page
-            'avg_engagement_time' => $this->formatDuration((int)$allVisitors->flatMap->pages
-                ->avg('page_visitor.total_duration_seconds')),
+            // // Average time between visits (for returning visitors)
+            // 'avg_time_between_visits' => $this->formatDuration((int)$allVisitors
+            //     ->filter(function($visitor) {
+            //         return $visitor->pages->sum('page_visitor.total_visits') > 1;
+            //     })
+            //     ->avg(function($visitor) {
+            //         $visits = $visitor->pages->pluck('page_visitor.first_visit_at')->sort();
+            //         if($visits->count() < 2) return 0;
+            //         return $visits->zip($visits->slice(1))
+            //             ->map(function($pair) {
+            //                 return Carbon::parse($pair[0])->diffInSeconds(Carbon::parse($pair[1]));
+            //             })
+            //             ->avg();
+            //     })),
+            // // Average engagement time per page
+            // 'avg_engagement_time' => $this->formatDuration((int)$allVisitors->flatMap->pages
+            //     ->avg('page_visitor.total_duration_seconds')),
 
-            // Most visited page path
-            'most_visited_path' => $allVisitors->flatMap->pages
-                ->groupBy('path')
-                ->map->count()
-                ->sortDesc()
-                ->keys()
-                ->first(),
+            // // Most visited page path
+            // 'most_visited_path' => $allVisitors->flatMap->pages
+            //     ->groupBy('path')
+            //     ->map->count()
+            //     ->sortDesc()
+            //     ->keys()
+            //     ->first(),
 
-            // Average pages per session by hour of day
-            'peak_pages_per_session_hour' => $allVisitors
-                ->groupBy(function($visitor) {
-                    return $visitor->pages->min('page_visitor.first_visit_at')->format('H');
-                })
-                ->map(function($visitors) {
-                    return round($visitors->avg(function($visitor) {
-                        return $visitor->pages->count();
-                    }), 1);
-                })
-                ->sortDesc()
-                ->keys()
-                ->first(),
+            // // Average pages per session by hour of day
+            // 'peak_pages_per_session_hour' => $allVisitors
+            //     ->groupBy(function($visitor) {
+            //         return $visitor->pages->min('page_visitor.first_visit_at')->format('H');
+            //     })
+            //     ->map(function($visitors) {
+            //         return round($visitors->avg(function($visitor) {
+            //             return $visitor->pages->count();
+            //         }), 1);
+            //     })
+            //     ->sortDesc()
+            //     ->keys()
+            //     ->first(),
 
-            // Percentage of visitors that view more than 5 pages
-            'deep_engagement_rate' => round(($allVisitors->filter(function($visitor) {
-                return $visitor->pages->count() > 5;
-            })->count() / max(1, $allVisitors->count())) * 100, 1),
+            // // Percentage of visitors that view more than 5 pages
+            // 'deep_engagement_rate' => round(($allVisitors->filter(function($visitor) {
+            //     return $visitor->pages->count() > 5;
+            // })->count() / max(1, $allVisitors->count())) * 100, 1),
 
-            // Average session duration by day of week
-            'longest_session_day' => $allVisitors
-                ->groupBy(function($visitor) {
-                    return $visitor->pages->min('page_visitor.first_visit_at')->format('l');
-                })
-                ->map(function($visitors) {
-                    return round($visitors->avg(function($visitor) {
-                        $firstVisit = $visitor->pages->min('page_visitor.first_visit_at');
-                        $lastVisit = $visitor->pages->max('page_visitor.last_visit_at');
-                        return $lastVisit && $firstVisit ? Carbon::parse($firstVisit)->diffInSeconds(Carbon::parse($lastVisit)) : 0;
-                    }));
-                })
-                ->sortDesc()
-                ->keys()
-                ->first(),
+            // // Average session duration by day of week
+            // 'longest_session_day' => $allVisitors
+            //     ->groupBy(function($visitor) {
+            //         return $visitor->pages->min('page_visitor.first_visit_at')->format('l');
+            //     })
+            //     ->map(function($visitors) {
+            //         return round($visitors->avg(function($visitor) {
+            //             $firstVisit = $visitor->pages->min('page_visitor.first_visit_at');
+            //             $lastVisit = $visitor->pages->max('page_visitor.last_visit_at');
+            //             return $lastVisit && $firstVisit ? Carbon::parse($firstVisit)->diffInSeconds(Carbon::parse($lastVisit)) : 0;
+            //         }));
+            //     })
+            //     ->sortDesc()
+            //     ->keys()
+            //     ->first(),
         ];
 
         return [$visitors, $globalStats];
@@ -483,8 +560,10 @@ trait ComponentTrait
 
     }
 
-    public function formatDuration(int $seconds): string
+    public function formatDuration(float $seconds): string
     {
+        $seconds = round($seconds);
+
         if ($seconds < 60) {
             return $seconds . 's';
         }

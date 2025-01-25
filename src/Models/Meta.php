@@ -27,10 +27,12 @@ class Meta extends Model
         'meta_type',
         'parent_id',
         'parent_type',
+        'visit_count',
     ];
 
     protected $casts = [
         'meta_data' => SchemalessAttributes::class,
+        'visit_count' => 'integer',
     ];
 
     public function scopeMetaDataAttributes(): Builder

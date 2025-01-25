@@ -9,6 +9,13 @@ const utils = {
         // Round to 2 decimal places for consistency
         return Math.round(ratio * 100) / 100;
     },
+    getUniqueId: () => {
+        // Generate a random unique ID using timestamp and random number that will be unique until page reload
+        const rawId = Date.now().toString(36) + Math.random().toString(36).substring(2) + (window.clientInformation?.userAgentData?.platform || navigator.platform || '').replace(/\s+/g, '');
+        const encoder = new TextEncoder();
+        const data = encoder.encode(rawId);
+        return window.btoa(String.fromCharCode.apply(null, new Uint8Array(data))).replace(/[+/]/g, char => char === '+' ? '-' : '_').replace(/=/g, '');
+    },
     getDevice: () => {
         const ua = navigator.userAgent;
         const platform = navigator.platform;

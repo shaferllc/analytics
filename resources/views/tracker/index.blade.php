@@ -1,7 +1,8 @@
 (function (w) {
     'use strict';
 
-    // Configurationhttps://duckduckgo.com/?q=locan+calculator&t=vivaldi
+
+    // Configuration
     {!! view('analytics::tracker.config.config')->render() !!}
 
     // Utility functions
@@ -39,7 +40,7 @@
 
         init() {
 
-            const startSessionTime = Date.now();
+            const startSessionTime = new Date();
 
             if (TSMonitorConfig.browserDebug) {
                 TSMonitor.toggleDebug(true);
@@ -54,6 +55,10 @@
             const queueEvent = (name, value, sendImmediately = false, type = 'event') => this.queueRequest({name, value, sendImmediately, type });
 
             queueEvent('start_session', {
+                iso_time: startSessionTime.toISOString(),
+                unix_timestamp: Math.floor(startSessionTime.getTime() / 1000),
+                utc_string: startSessionTime.toUTCString(),
+                locale_string: startSessionTime.toLocaleString(),
                 start_time: startSessionTime,
                 user_id: utils.getUserId(),
                 time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -99,51 +104,67 @@
                 viewport_width: utils.getViewportWidth(),
             });
 
-            queueEvent('performance_metrics', {
-                current_fps: utils.getCurrentFPS(),
-                page_load_metrics: utils.getPageLoadMetrics(),
-                largest_contentful_paint: utils.getLargestContentfulPaint(),
-                first_input_delay: utils.getFirstInputDelay(),
-                cumulative_layout_shift: utils.getCumulativeLayoutShift(),
-                resource_timing: utils.getResourceTiming(),
-                load_time: utils.getLoadTime(),
-                network_latency: utils.getNetworkLatency(),
-                page_load_time: utils.getPageLoadTime(),
-            });
+           // queueEvent('performance_metrics', {
+           //     current_fps: utils.getCurrentFPS(),
+           //     page_load_metrics: utils.getPageLoadMetrics(),
+           //     largest_contentful_paint: utils.getLargestContentfulPaint(),
+           //     first_input_delay: utils.getFirstInputDelay(),
+           //     cumulative_layout_shift: utils.getCumulativeLayoutShift(),
+           //     resource_timing: utils.getResourceTiming(),
+           //     load_time: utils.getLoadTime(),
+           //     network_latency: utils.getNetworkLatency(),
+           //     page_load_time: utils.getPageLoadTime(),
+           // });
 
-            queueEvent('user_interaction_data', {
-                element_z_level: utils.getElementZLevel(),
-                scroll_direction: utils.getScrollDirection(),
-                scroll_speed: utils.getScrollSpeed(),
-                scroll_depth: utils.getScrollDepth(),
-                navigation_type: utils.getNavigationType(),
-                redirect_count: utils.getRedirectCount(),
-                page_depth: utils.getPageDepth(),
-            });
+          //  queueEvent('user_interaction_data', {
+          //      element_z_level: utils.getElementZLevel(),
+          //      scroll_direction: utils.getScrollDirection(),
+          //      scroll_speed: utils.getScrollSpeed(),
+          //      scroll_depth: utils.getScrollDepth(),
+          //      navigation_type: utils.getNavigationType(),
+          //      redirect_count: utils.getRedirectCount(),
+          //      page_depth: utils.getPageDepth(),
+          //  });
 
-            queueEvent('device_data', {
-                battery_status: utils.getBatteryStatus(),
-                cpu_cores: utils.getCPUCores(),
-                device: utils.getDevice(),
-                device_type: utils.getDeviceType(),
-                os: utils.getOS(),
-                memory_usage: utils.getMemoryUsage(),
-                screen_locked: utils.isScreenLocked(),
-                resolution: utils.getResolution(),
-                memory: utils.getDeviceMemory(),
-                connection_speed: utils.getConnectionSpeed(),
-            });
+           // queueEvent('device_data', {
+           //     battery_status: utils.getBatteryStatus(),
+           //     cpu_cores: utils.getCPUCores(),
+           //     device: utils.getDevice(),
+           //     device_type: utils.getDeviceType(),
+           //     os: utils.getOS(),
+           //     memory_usage: utils.getMemoryUsage(),
+           //     screen_locked: utils.isScreenLocked(),
+           //     resolution: utils.getResolution(),
+           //     memory: utils.getDeviceMemory(),
+           //     connection_speed: utils.getConnectionSpeed(),
+           // });
 
-            w.addEventListener('beforeunload', () => {
-                const endSessionTime = Date.now();
-                queueEvent('end_session', {
-                    end_time: endSessionTime,
-                    total_duration_seconds: Math.round((endSessionTime - startSessionTime) / 1000),
-                    total_duration: endSessionTime - startSessionTime,
-                    page_url: utils.getPageUrl(),
-                    exit_page: utils.getPagePath()
-                }, true);
-            });
+            // Use both beforeunload and unload events for better coverage
+            const handleSessionEnd = () => {
+
+                try {
+                    const endSessionTime = new Date();
+
+                    queueEvent('end_session', {
+                        iso_time: endSessionTime.toISOString(),
+                        unix_timestamp: Math.floor(endSessionTime.getTime() / 1000),
+                        utc_string: endSessionTime.toUTCString(),
+                        locale_string: endSessionTime.toLocaleString(),
+                        end_time: endSessionTime,
+                        total_duration_seconds: Math.abs(Math.round(endSessionTime - startSessionTime)),
+                        total_duration: Math.abs(endSessionTime - startSessionTime),
+                        page_url: utils.getPageUrl(),
+                        exit_page: utils.getPagePath()
+                    }, true);
+
+                } catch (e) {
+                    console.error('Failed to send session end event:', e);
+                }
+            };
+
+            w.addEventListener('beforeunload', handleSessionEnd);
+            w.addEventListener('unload', handleSessionEnd);
+            w.addEventListener('pagehide', handleSessionEnd);
 
             w.addEventListener('load', () => {
                 utils.initializeEventListeners(w.TSMonitorConfig.events);

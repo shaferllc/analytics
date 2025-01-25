@@ -33,7 +33,6 @@ class UpdatePageMeta
         }
         $page->save();
 
-
         return $next($payload);
     }
 }

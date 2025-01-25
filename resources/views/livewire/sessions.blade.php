@@ -1,4 +1,4 @@
-<x-site :site="$site">
+<x-site :site="$site" >
     <div class="space-y-4">
         <x-analytics::breadcrumbs :breadcrumbs="[
             [
@@ -38,211 +38,8 @@
             :search="$search"
         />
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            <!-- Session Stats -->
-            <div class="bg-white dark:bg-gray-600 p-6 rounded-xl shadow-lg border border-gray-50 dark:border-gray-500">
-                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-50 mb-4 flex items-center gap-2">
-                    <x-icon name="heroicon-o-presentation-chart-line" class="w-5 h-5 text-gray-500 dark:text-gray-300" />
-                    {{ __('Session Overview') }}
-                </h3>
-                <div class="space-y-3">
-                    @foreach([
-                        'total_sessions' => [
-                            'label' => 'Total Sessions',
-                            'icon' => 'heroicon-o-users',
-                            'format' => 'number',
-                            'tooltip' => 'Total number of unique sessions during selected period'
-                        ],
-                        'total_pageviews' => [
-                            'label' => 'Total Pageviews',
-                            'icon' => 'heroicon-o-document-text',
-                            'format' => 'number',
-                            'tooltip' => 'Total number of pages viewed during selected period'
-                        ],
-                        'avg_session_duration' => [
-                            'label' => 'Avg Session Duration',
-                            'icon' => 'heroicon-o-clock',
-                            'format' => 'string',
-                            'tooltip' => 'Average time visitors spend on your site per session'
-                        ],
-                        'avg_pages_per_session' => [
-                            'label' => 'Avg Pages/Session',
-                            'icon' => 'heroicon-o-document-duplicate',
-                            'format' => 'decimal',
-                            'tooltip' => 'Average number of pages viewed per session'
-                        ],
-                        'bounce_rate' => [
-                            'label' => 'Bounce Rate',
-                            'icon' => 'heroicon-o-arrow-uturn-left',
-                            'format' => 'percent',
-                            'tooltip' => 'Percentage of visitors who leave after viewing only one page'
-                        ]
-                    ] as $key => $meta)
-                        <div class="flex gap-2 justify-between items-center">
-                            <x-tooltip :text="__($meta['tooltip'])">
-                                <span class="text-gray-500 dark:text-gray-300 flex items-center gap-2 text-sm">
-                                    <x-icon :name="$meta['icon']" class="w-5 h-5 text-gray-500 dark:text-gray-300" />
-                                    {{ __($meta['label']) }}
-                                </span>
-                            </x-tooltip>
-                            <x-tooltip :text="__($meta['tooltip'])">
-                                <span class="font-medium text-gray-700 dark:text-gray-50">
-                                    @if($meta['format'] === 'string')
-                                        {{ $globalStats[$key] }}
-                                    @elseif($meta['format'] === 'decimal')
-                                        {{ number_format($globalStats[$key], 1) }}
-                                    @elseif($meta['format'] === 'percent')
-                                        {{ number_format($globalStats[$key], 1) }}%
-                                    @else
-                                        {{ number_format($globalStats[$key]) }}
-                                    @endif
-                                </span>
-                            </x-tooltip>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
+       @include('analytics::livewire.partials.sessions.stats')
 
-            <!-- Today's Stats -->
-            <div class="bg-white dark:bg-gray-600 p-6 rounded-xl shadow-lg border border-gray-50 dark:border-gray-500">
-                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-50 mb-4 flex items-center gap-2">
-                    <x-icon name="heroicon-o-calendar" class="w-5 h-5 text-gray-500 dark:text-gray-300" />
-                    {{ __('Today') }}
-                </h3>
-                <div class="space-y-3">
-                    @foreach([
-                        'sessions_today' => [
-                            'label' => 'Sessions',
-                            'icon' => 'heroicon-o-user-group',
-                            'format' => 'number'
-                        ],
-                        'peak_hour_today' => [
-                            'label' => 'Peak Hour',
-                            'icon' => 'heroicon-o-clock',
-                            'format' => 'hour'
-                        ],
-
-                    ] as $key => $meta)
-                        <div class="flex gap-2 justify-between items-center">
-                            <x-tooltip :text="__($meta['label'])">
-                                <span class="text-gray-500 dark:text-gray-300 flex items-center gap-2">
-                                    <x-icon :name="$meta['icon']" class="w-5 h-5" />
-                                    {{ __($meta['label']) }}
-                                </span>
-                            </x-tooltip>
-                            <x-tooltip :text="__($meta['label'])">
-                                <span class="font-medium text-gray-700 dark:text-gray-50">
-                                    @if($meta['format'] === 'hour')
-                                        {{ $globalStats[$key] }}:00
-                                    @else
-                                        {{ number_format($globalStats[$key]) }}
-                                    @endif
-                                </span>
-                            </x-tooltip>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-
-            <!-- This Week's Stats -->
-            <div class="bg-white dark:bg-gray-600 p-6 rounded-xl shadow-lg border border-gray-50 dark:border-gray-500">
-                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-50 mb-4 flex items-center gap-2">
-                    <x-icon name="heroicon-o-calendar" class="w-5 h-5 text-gray-500 dark:text-gray-300" />
-                    {{ __('This Week') }}
-                </h3>
-                <div class="space-y-3">
-                    @foreach([
-                        'sessions_yesterday' => [
-                            'label' => 'Yesterday',
-                            'icon' => 'heroicon-o-clock',
-                            'format' => 'number',
-                            'tooltip' => 'Total number of sessions yesterday'
-                        ],
-                        'sessions_this_week' => [
-                            'label' => 'Sessions',
-                            'icon' => 'heroicon-o-user-group',
-                            'format' => 'number',
-                            'tooltip' => 'Total number of sessions during selected period'
-                        ],
-                        'sessions_last_week' => [
-                            'label' => 'Last Week',
-                            'icon' => 'heroicon-o-clock',
-                            'format' => 'number',
-                            'tooltip' => 'Total number of sessions last week'
-                        ],
-
-                        'peak_hour_this_week' => [
-                            'label' => 'Peak Hour',
-                            'icon' => 'heroicon-o-clock',
-                            'format' => 'hour',
-                            'tooltip' => 'Hour with the highest number of sessions during selected period'
-                        ]
-                    ] as $key => $meta)
-                        <div class="flex gap-2 justify-between items-center">
-                            <x-tooltip :text="__($meta['label'])">
-                                <span class="text-gray-500 dark:text-gray-300 flex items-center gap-2">
-                                    <x-icon :name="$meta['icon']" class="w-5 h-5" />
-                                    {{ __($meta['label']) }}
-                                </span>
-                            </x-tooltip>
-                            <x-tooltip :text="__($meta['label'])">
-                                <span class="font-medium text-gray-700 dark:text-gray-50">
-                                    @if($meta['format'] === 'hour')
-                                        {{ $globalStats[$key] }}:00
-                                    @else
-                                        {{ number_format($globalStats[$key]) }}
-                                    @endif
-                                </span>
-                            </x-tooltip>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-
-            <!-- Additional Metrics -->
-            <div class="bg-white dark:bg-gray-600 p-6 rounded-xl shadow-lg border border-gray-50 dark:border-gray-500">
-                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-50 mb-4 flex items-center gap-2">
-                    <x-icon name="heroicon-o-chart-bar" class="w-5 h-5 text-gray-500 dark:text-gray-300" />
-                    {{ __('Engagement') }}
-                </h3>
-                <div class="space-y-3">
-                    @foreach([
-                        'avg_time_per_visit' => [
-                            'label' => 'Avg Time/Visit',
-                            'icon' => 'heroicon-o-clock',
-                            'format' => 'time'
-                        ],
-                        'returning_visitors' => [
-                            'label' => 'Returning Visitors',
-                            'icon' => 'heroicon-o-arrow-path',
-                            'format' => 'number'
-                        ],
-                        'engagement_rate' => [
-                            'label' => 'Engagement Rate',
-                            'icon' => 'heroicon-o-chart-bar',
-                            'format' => 'percent'
-                        ]
-                    ] as $key => $meta)
-                        <div class="flex justify-between items-center">
-                            <
-                            <span class="text-gray-500 dark:text-gray-300 flex items-center gap-2">
-                                <x-icon :name="$meta['icon']" class="w-5 h-5" />
-                                {{ __($meta['label']) }}
-                            </span>
-                            <span class="font-medium text-gray-700 dark:text-gray-50">
-                                @if($meta['format'] === 'time')
-                                    {{ gmdate('H:i:s', $globalStats[$key]) }}
-                                @elseif($meta['format'] === 'percent')
-                                    {{ number_format($globalStats[$key], 1) }}%
-                                @else
-                                    {{ number_format($globalStats[$key]) }}
-                                @endif
-                            </span>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-        </div>
         <div>
             @if($visitors->isEmpty())
                 <x-analytics::no-results />
@@ -261,7 +58,7 @@
                                         <div>
                                             <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-50 max-w-full flex items-center space-x-3">
                                                 <span>{{ $visitor['session_id'] }}</span>
-                                                <span class="text-sm text-gray-400 dark:text-gray-100">#{{ $visitor['id'] }}</span>
+                                                <!-- <span class="text-sm text-gray-400 dark:text-gray-100">#{{ $visitor['id'] }}</span> -->
                                             </h3>
                                             <div class="mt-1 flex flex-wrap items-center gap-2 text-gray-500 dark:text-gray-100 text-sm">
                                                 @foreach($visitor['city'] as $index => $city)
@@ -272,14 +69,14 @@
                                                     @endif
                                                 @endforeach
 
-                                                @if($visitor['timezone'])
+                                                @if(filled($visitor['timezone']))
                                                     <span class="bg-blue-50 dark:bg-gray-500 px-2 py-1 rounded">
-                                                        <x-icon name="heroicon-o-clock" class="w-4 h-4 inline mr-1" />
+                                                        <x-icon name="heroicon-o-clock" class="w-4 h-4 inline-block mr-1" />
                                                         {{ $visitor['timezone'] }}
                                                     </span>
                                                 @endif
 
-                                                @if($visitor['language'])
+                                                @if(filled($visitor['language']))
                                                     <span class="bg-blue-50 dark:bg-gray-500 px-2 py-1 rounded">
                                                         <x-icon name="heroicon-o-language" class="w-4 h-4 inline mr-1" />
                                                         {{ $visitor['language'] }}
@@ -294,28 +91,33 @@
                                                 [
                                                     'icon' => 'clock',
                                                     'label' => __('First visit'),
-                                                    'value' => $visitor['first_visit']->diffForHumans(),
-                                                    'class' => 'text-gray-500 dark:text-gray-100'
+                                                    'value' => $visitor['first_visit']->format('d-m-Y H:i:s'),
+                                                    'class' => 'text-gray-500 dark:text-gray-100',
+                                                    'tooltip' => __('First visit'),
                                                 ],
                                                 [
                                                     'icon' => 'arrow-path',
                                                     'label' => __('Last visit'),
-                                                    'value' => $visitor['last_visit']->diffForHumans(),
-                                                    'class' => 'text-gray-500 dark:text-gray-100'
+                                                    'value' => $visitor['last_visit']->format('d-m-Y H:i:s'),
+                                                    'class' => 'text-gray-500 dark:text-gray-100',
+                                                    'tooltip' => __('Last visit'),
                                                 ],
                                                 [
                                                     'icon' => 'clock',
-                                                    'label' => '',
+                                                    'label' => __('Duration'),
                                                     'value' => number_format($visitor['session_duration'], 1) . 's',
-                                                    'class' => 'font-medium text-gray-700 dark:text-gray-50'
+                                                    'class' => 'font-medium text-gray-700 dark:text-gray-50',
+                                                    'tooltip' => __('Duration'),
                                                 ]
                                             ] as $item)
                                                 <div class="text-sm {{ $item['class'] }}">
-                                                    <x-icon name="heroicon-o-{{ $item['icon'] }}" class="w-4 h-4 inline mr-1" />
-                                                    @if($item['label'])
-                                                        {{ $item['label'] }}:
-                                                    @endif
-                                                    {{ $item['value'] }}
+                                                    <x-tooltip :text="$item['tooltip']" >
+                                                        <x-icon name="heroicon-o-{{ $item['icon'] }}" class="w-4 h-4 inline mr-1" />
+                                                        @if($item['label'])
+                                                            {{ $item['label'] }}:
+                                                        @endif
+                                                        {{ $item['value'] }}
+                                                    </x-tooltip>
                                                 </div>
                                             @endforeach
                                         </div>
@@ -330,11 +132,11 @@
                                         ],
                                         [
                                             'label' => 'Total Duration',
-                                            'value' => gmdate('H:i:s', $visitor['total_duration'])
+                                            'value' => $visitor['total_duration'] ? gmdate('H:i:s', $visitor['total_duration']) : 'N/A'
                                         ],
                                         [
                                             'label' => 'Time Spent',
-                                            'value' => gmdate('H:i:s', $visitor['total_time_spent'])
+                                            'value' => $visitor['total_time_spent'] ? gmdate('H:i:s', $visitor['total_time_spent']) : 'N/A'
                                         ],
                                         [
                                             'label' => 'Total Visits',
@@ -466,6 +268,13 @@
                                         </div>
                                     @endforeach
                                 </div>
+                            </div>
+
+                            <div class="flex items-center space-x-2">
+                                <x-button href="route('sites.analytics.sessions.visitor', ['site' => $site->id, 'visitor' => $visitor['id']])" class="bg-blue-500 text-white hover:bg-blue-600">
+                                    <x-icon name="heroicon-o-eye" class="w-4 h-4 inline mr-1" />
+                                    {{ __('View') }}
+                                </x-button>
                             </div>
                         @endforeach
                     </x-analytics::view>

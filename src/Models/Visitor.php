@@ -32,13 +32,12 @@ class Visitor extends Model
     ];
 
     protected $casts = [
-        'start_session_at' => 'datetime',
         'meta_data' => SchemalessAttributes::class,
     ];
 
-    public function meta(): MorphMany
+    public function meta(): MorphToMany
     {
-        return $this->morphMany(Meta::class, 'metaable');
+        return $this->morphToMany(Meta::class, 'metaable');
     }
 
     public function scopeWithMetaData(): Builder
@@ -58,7 +57,6 @@ class Visitor extends Model
             ->as('page_visitor')
             ->withPivot([
                 'id',
-                'site_id',
                 'page_id',
                 'visitor_id',
                 'start_session_at',
@@ -79,22 +77,21 @@ class Visitor extends Model
             ->using(PageVisitor::class)
             ->withPivot([
                 'id',
-                'site_id',
+                'page_id',
+                'visitor_id',
                 'last_visit_at',
                 'first_visit_at',
-                'total_time_spent',
                 'total_visits',
-                'start_session_at',
-                'end_session_at',
-                'total_duration_seconds',
-                'meta_data',
-                'meta_type'
-            ])->withTimestamps();
+            ]);
     }
 
-    public function events(): HasMany
+    public function sessions(): HasMany
     {
-        return $this->hasMany(Event::class);
+        return $this->hasMany(Sessions::class);
     }
 
+    public function events(): BelongsToMany
+    {
+        return $this->belongsToMany(Event::class, 'analytics_event_visitors');
+    }
 }

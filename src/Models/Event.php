@@ -11,6 +11,8 @@ use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Spatie\SchemalessAttributes\SchemalessAttributesTrait;
 use Spatie\SchemalessAttributes\Casts\SchemalessAttributes;
 
@@ -19,55 +21,35 @@ class Event extends Model
     use HasUlids, SchemalessAttributesTrait;
     protected $table = 'analytics_events';
 
-    protected $schemalessAttributes = [
-        'value',
-        'meta_data',
-    ];
-
     protected $fillable = [
-        'site_id',
-        'visitor_id',
-        'page_id',
+        'hash',
         'name',
-        'value',
-        'timestamp',
-        'meta_data',
+        'visit_count',
     ];
 
     protected $casts = [
         'timestamp' => 'datetime',
-        'value' => SchemalessAttributes::class,
-        'meta_data' => SchemalessAttributes::class,
+        'visit_count' => 'integer',
     ];
-
-    public function scopeWithValue(): Builder
-    {
-        return $this->value->modelScope();
-    }
-
-    public function scopeWithMetaData(): Builder
-    {
-        return $this->meta_data->modelScope();
-    }
-
     public function meta(): MorphMany
     {
         return $this->morphMany(Meta::class, 'metaable');
     }
 
 
-    public function site(): BelongsTo
+    public function site(): BelongsToMany
     {
-        return $this->belongsTo(Site::class);
+        return $this->belongsToMany(Site::class);
     }
 
-    public function visitor(): BelongsTo
+
+    public function visitors(): BelongsToMany
     {
-        return $this->belongsTo(Visitor::class);
+        return $this->belongsToMany(Visitor::class, 'analytics_event_visitors');
     }
 
-    public function page(): BelongsTo
+    public function page(): BelongsToMany
     {
-        return $this->belongsTo(Page::class);
+        return $this->belongsToMany(Page::class);
     }
 }

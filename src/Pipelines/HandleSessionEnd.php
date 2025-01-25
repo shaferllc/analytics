@@ -18,26 +18,25 @@ class HandleSessionEnd
         $endSession = collect($events)->where('name', 'end_session')->first();
 
         if ($endSession) {
-            $this->updateVisitorPivot($page, $visitor, $data, $endSession);
+            $this->handleSessionEnd($page, $visitor, $data, $endSession);
             $this->handleExitPageMeta($visitor, $endSession);
         }
 
         return $next($payload);
     }
 
-    private function updateVisitorPivot($page, $visitor, $data, $endSession)
+    private function handleSessionEnd($page, $visitor, $data, $endSession)
     {
-        $page->visitors()->updateExistingPivot($visitor->id, [
+
+        $session = $visitor->sessions()->where('request_id', Arr::get($data, 'request_id'))->orWhere('session_id', Arr::get($data, 'session_id'))->latest()->first();
+
+        $session->update([
             'end_session_at' => Carbon::parse(Arr::get($endSession, 'value.end_time')),
-            'total_duration_seconds' => ($page->visitors()
-                ->where('session_id', Arr::get($data, 'session_id'))
-                ->first()?->page_visitor?->total_duration_seconds ?? 0) +
-                Arr::get($endSession, 'value.total_duration_seconds'),
-            'total_time_spent' => ($page->visitors()
-                ->where('session_id', Arr::get($data, 'session_id'))
-                ->first()?->page_visitor?->total_time_spent ?? 0) +
-                Arr::get($endSession, 'value.total_duration'),
+            'total_duration_seconds' => Arr::get($endSession, 'value.total_duration_seconds', 0),
+            'total_duration' => Arr::get($endSession, 'value.total_duration', 0),
         ]);
+        $session->save();
+
     }
 
     private function handleExitPageMeta($visitor, $endSession)

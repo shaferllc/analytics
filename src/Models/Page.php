@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Shaferllc\Analytics\Models;
 
 use App\Models\Site;
+
+use Shaferllc\Analytics\Models\Event;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -69,24 +71,17 @@ class Page extends Model
             ->using(PageVisitor::class)
             ->withPivot([
                 'id',
-                'site_id',
                 'page_id',
                 'visitor_id',
-                'start_session_at',
-                'end_session_at',
-                'total_duration_seconds',
-                'total_time_spent',
-                'total_visits',
                 'last_visit_at',
                 'first_visit_at',
-                'total_time_spent',
                 'total_visits',
-            ])->withTimestamps();
+            ]);
     }
 
-    public function events(): HasMany
+    public function events(): BelongsToMany
     {
-        return $this->hasMany(Event::class);
+        return $this->belongsToMany(Event::class, 'analytics_eventables');
     }
 
     public function pageVisitors(): HasManyThrough

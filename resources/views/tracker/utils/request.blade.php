@@ -9,6 +9,54 @@ queueRequest(requestData) {
            timestamp: Math.floor(Date.now() / 100) * 100
        });
 
+        // Check for bot/crawler indicators
+        const isBot = (
+            // Check common bot user agents
+            /bot|crawler|spider|crawling|googlebot|bingbot|yandexbot|slurp|baidu|teoma|ahrefs|semrush/i.test(navigator.userAgent) ||
+            !navigator.webdriver === undefined ||
+            /PhantomJS|HeadlessChrome|Nightmare|Puppeteer/i.test(navigator.userAgent) ||
+            navigator.webdriver ||
+            navigator.userAgent.includes("HeadlessChrome") ||
+            !navigator.languages ||
+            navigator.languages.length === 0 ||
+            !window.history ||
+            !window.localStorage ||
+            !window.sessionStorage ||
+            (window.screen && (window.screen.width === 0 || window.screen.height === 0)) ||
+            !window.devicePixelRatio ||
+            !window.innerWidth ||
+            !window.innerHeight ||
+            window._phantom ||
+            window.callPhantom ||
+            window.__nightmare ||
+            window.domAutomation ||
+            window.webdriver ||
+            typeof navigator.plugins === 'undefined' ||
+            navigator.plugins.length === 0 ||
+            /amazonaws|googleusercontent|azure|digitalocean/i.test(document.referrer) ||
+            performance && performance.timing && performance.timing.navigationStart === 0 ||
+            navigator.hardwareConcurrency === undefined ||
+            navigator.deviceMemory === undefined ||
+            !window.indexedDB ||
+            !window.requestAnimationFrame ||
+            !window.matchMedia ||
+            performance.now() === 0 ||
+            !navigator.onLine ||
+            !window.fetch ||
+            !window.XMLHttpRequest ||
+            !window.WebGLRenderingContext ||
+            !window.CanvasRenderingContext2D ||
+            (!window.AudioContext && !window.webkitAudioContext) ||
+            (!('ontouchstart' in window) && !window.TouchEvent) ||
+            !window.MouseEvent ||
+            !window.KeyboardEvent
+        );
+
+        if (isBot) {
+            utils.debugLog('Bot/suspicious client detected, skipping request:', requestData);
+            return;
+        }
+
         // Initialize sent requests Set if not exists
         if (!this.sentRequests) {
             this.sentRequests = new Set();
@@ -240,14 +288,22 @@ async sendRequest(events, method = 'POST') {
             return Promise.reject();
         }
 
+        const page = utils.getPageUrl();
+        const session_id = utils.getSessionId();
+        const title = utils.getPageTitle();
+        const path = utils.getPagePath();
+        const charset = utils.getCharacterSet();
+        const request_id = utils.getUniqueId();
+        const site_id = config.siteId;
         const payload = {
-            siteId: config.siteId,
-            page: utils.getPageUrl(),
-            session_id: utils.getSessionId(),
-            title: utils.getPageTitle(),
-            path: utils.getPagePath(),
-            charset: utils.getCharacterSet(),
-            events
+            site_id: site_id,
+            page: page,
+            session_id: session_id,
+            title: title,
+            path: path,
+            charset: charset,
+            request_id: request_id,
+            events: events
         };
 
         // Try fetch first
