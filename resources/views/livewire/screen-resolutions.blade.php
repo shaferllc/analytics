@@ -1,116 +1,442 @@
-<x-website :website="$site">
-    <div class="space-y-4">
-        <x-analytics::breadcrumbs :breadcrumbs="[
-                [
-                    'url' => route('websites.analytics.overview', ['website' => $site->id]),
-                    'label' => __('Dashboard'),
-                ],
-                [
-                    'url' => route('websites.analytics.technology', ['website' => $site->id]),
-                    'label' => __('Technology'),
-                ],
-                [
-                    'url' => route('websites.analytics.screen-resolutions', ['website' => $site->id]),
-                    'label' => __('Screen Resolutions'),
-                ]
-            ]" />
+<x-site :site="$site">
+    <div class="space-y-8">
+        <x-breadcrumbs :breadcrumbs="[
+            ['url' => route('sites.analytics.overview', ['site' => $site->id]), 'label' => __('Analytics Dashboard')],
+            ['url' => route('sites.analytics.screen-resolutions', ['site' => $site->id]), 'label' => __('Screen Resolutions'), 'icon' => 'heroicon-o-device-tablet']
+        ]" />
 
-        @include('analytics::livewire.partials.nav')
+        <div class="flex justify-end gap-4">
+            <x-ts-dropdown position="bottom-end">
+                <x-slot:action>
+                    <x-ts-button x-on:click="show = !show" sm>{{ __('Time Range') }}</x-ts-button>
+                </x-slot:action>
+                <x-ts-dropdown.items wire:click="setTimeRange('today')" :active="$daterange === 'today'">{{ __('Today') }}</x-ts-dropdown.item>
+                <x-ts-dropdown.items wire:click="setTimeRange('7d')" :active="$daterange === '7d'">{{ __('Last 7 Days') }}</x-ts-dropdown.item>
+                <x-ts-dropdown.items wire:click="setTimeRange('30d')" :active="$daterange === '30d'">{{ __('Last 30 Days') }}</x-ts-dropdown.item>
+                <x-ts-dropdown.items wire:click="setTimeRange('90d')" :active="$daterange === '90d'">{{ __('Last 90 Days') }}</x-ts-dropdown.item>
+            </x-ts-dropdown>
 
-        <x-analytics::title
-            :title="__('Screen Resolutions')"
-            :description="__('Screen resolutions are the dimensions of screens used to access your website. The @2x and @3x suffixes indicate high-density displays that use multiple physical pixels per logical pixel - @2x means 2 physical pixels per logical pixel, @3x means 3 physical pixels per logical pixel.')"
-            :totalPageviews="$total"
-            :icon="'heroicon-o-computer-desktop'"
-            :totalText="__('Total Screen Resolutions')"
-            :data="$data"
-            :total="$total"
-            :first="$first"
-            :last="$last"
-            :website="$site"
-            :daterange="$daterange"
-            :perPage="$perPage"
-            :sortBy="$sortBy"
-            :sort="$sort"
-            :from="$from"
-            :sortWords="['count' => __('Pageviews'), 'value' => __('Resolution')]"
-            :to="$to"
-            :search="$search"
-        />
+            <x-ts-button wire:click="exportData" sm>
+                <x-icon name="heroicon-o-arrow-down-tray" class="w-4 h-4 mr-2" />
+                {{ __('Export') }}
+            </x-ts-button>
+        </div>
 
-        <div>
-            @if(count($data) == 0)
-                <x-analytics::no-results />
-            @else
-                <div x-data="{ view: '{{ $display }}', hoveredItem: null, animate: true }"
-                     x-init="setTimeout(() => animate = false, 1000)"
-                     class="space-y-4">
-                     <x-analytics::view-switcher :data="$data" color="fuchsia" />
+        <x-loading />
+        @if($resolutions->isNotEmpty())
+            <div class="space-y-6">
+                <div class="relative bg-white/90 dark:bg-slate-800/90 rounded-2xl shadow-lg border border-slate-200/60 dark:border-slate-700/60 p-6 overflow-hidden" x-data="{ isOpen: true }">
+                    <div class="cursor-pointer" @click="isOpen = !isOpen">
+                        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                            <div class="space-y-2 flex-initial">
+                                <div class="flex items-center gap-4">
+                                    <div class="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
+                                        <x-icon name="heroicon-o-device-tablet" class="w-6 h-6 text-emerald-500" />
+                                    </div>
+                                    <div>
+                                        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
+                                            {{ __('Screen Resolutions') }}
+                                        </h2>
+                                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                                            {{ __('Detailed Insights Into User Screen Resolutions') }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
 
-                    <x-analytics::view view="list" color="fuchsia" class="bg-gradient-to-br from-fuchsia-900 to-fuchsia-950 rounded-xl shadow-lg border border-fuchsia-800 p-6 backdrop-blur-xl">
-                        <div class="flex flex-col space-y-6">
-                            @foreach($data as $screenResolution)
-                                <div class="flex items-center space-x-4 group hover:bg-fuchsia-800/20 p-4 rounded-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-lg border border-fuchsia-800">
-                                    <div class="flex-1">
-                                        <div class="relative">
-                                            <div class="text-sm text-fuchsia-100 mb-2">
-                                                <div class="flex items-center justify-between">
-                                                    <div class="flex flex-col">
-                                                        <div class="flex items-center space-x-2">
-                                                            <x-tooltip text="{{ str_contains($screenResolution->value, '@2x') ? 'High-density display using 2 physical pixels per logical pixel' : (str_contains($screenResolution->value, '@3x') ? 'High-density display using 3 physical pixels per logical pixel' : 'Standard display resolution') }}" class="group-hover:opacity-100">
-                                                                <span class="font-medium bg-gradient-to-r from-fuchsia-200 to-fuchsia-100 bg-clip-text text-transparent">
-                                                                    <x-icon name="heroicon-o-computer-desktop" class="w-4 h-4 inline mr-1 text-fuchsia-300" />
-                                                                    {{ $screenResolution->value ? $screenResolution->value : __('Unknown') }}
-                                                                </span>
-                                                            </x-tooltip>
+                            <div class="flex items-center gap-2 p-2 hover:bg-slate-100/50 dark:hover:bg-slate-700/20 rounded-lg transition-colors">
+                                <div>
+                                    <template x-if="isOpen">
+                                        <x-icon name="heroicon-o-chevron-up" class="w-6 h-6 text-slate-400 bg-slate-100/50 dark:bg-slate-500/20 rounded-lg p-1"  />
+                                    </template>
+                                    <template x-if="!isOpen">
+                                        <x-icon name="heroicon-o-chevron-down" class="w-6 h-6 text-slate-400 bg-slate-100/50 dark:bg-slate-500/20 rounded-lg p-1" />
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div x-show="isOpen" x-collapse>
+                        <div class="grid grid-cols-1 gap-4">
+                            <div class="relative bg-white/90 dark:bg-slate-800/90 rounded-2xl shadow-lg border border-slate-200/60 dark:border-slate-700/60 p-6">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                                    <!-- Basic Stats -->
+                                    <div class="space-y-2">
+                                        <div class="flex items-center gap-3">
+                                            <div class="p-2 bg-emerald-50 dark:bg-emerald-800/20 rounded-lg">
+                                                <x-icon name="heroicon-o-device-tablet" class="w-6 h-6 text-emerald-500" />
+                                            </div>
+                                            <div>
+                                                <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('Total Resolutions') }}</p>
+                                                <p class="text-xl font-semibold text-emerald-600 dark:text-emerald-400">
+                                                    {{ number_format($aggregates['total_categories']) }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div class="flex justify-between text-sm items-center">
+                                            <span class="text-slate-500 flex items-center gap-2">
+                                                <x-icon name="heroicon-o-users" class="w-4 h-4 text-blue-500" />
+                                                {{ __('Unique Visitors') }}:
+                                            </span>
+                                            <span class="font-medium text-blue-600 dark:text-blue-400">{{ number_format($aggregates['unique_visitors']) }}</span>
+                                        </div>
+                                        <div class="flex justify-between text-sm items-center">
+                                            <span class="text-slate-500 flex items-center gap-2">
+                                                <x-icon name="heroicon-o-arrow-path" class="w-4 h-4 text-purple-500" />
+                                                {{ __('Total Visits') }}:
+                                            </span>
+                                            <span class="font-medium text-purple-600 dark:text-purple-400">{{ number_format($aggregates['total_visits']) }}</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Engagement Metrics -->
+                                    <div class="space-y-2">
+                                        <h3 class="font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                                            <x-icon name="heroicon-o-chart-bar" class="w-5 h-5 text-indigo-500" />
+                                            {{ __('Engagement') }}
+                                        </h3>
+                                        <div class="flex justify-between text-sm items-center">
+                                            <span class="text-slate-500 flex items-center gap-2">
+                                                <x-icon name="heroicon-o-arrow-trending-up" class="w-4 h-4 text-sky-500" />
+                                                {{ __('Avg Visits/Resolution') }}:
+                                            </span>
+                                            <span class="font-medium text-sky-600 dark:text-sky-400">{{ number_format($aggregates['average_visits_per_visitor'], 1) }}</span>
+                                        </div>
+                                        <div class="flex justify-between text-sm items-center">
+                                            <span class="text-slate-500 flex items-center gap-2">
+                                                <x-icon name="heroicon-o-arrow-uturn-left" class="w-4 h-4 text-teal-500" />
+                                                {{ __('Retention Rate') }}:
+                                            </span>
+                                            <span class="font-medium text-teal-600 dark:text-teal-400">{{ number_format($aggregates['visitor_retention_rate'], 1) }}%</span>
+                                        </div>
+                                        <div class="flex justify-between text-sm items-center">
+                                            <span class="text-slate-500 flex items-center gap-2">
+                                                <x-icon name="heroicon-o-star" class="w-4 h-4 text-amber-500" />
+                                                {{ __('Engagement Score') }}:
+                                            </span>
+                                            <span class="font-medium text-amber-600 dark:text-amber-400">{{ number_format($aggregates['engagement_score'], 1) }}</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Visit Distribution -->
+                                    <div class="space-y-2">
+                                        <h3 class="font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                                            <x-icon name="heroicon-o-chart-pie" class="w-5 h-5 text-rose-500" />
+                                            {{ __('Visit Patterns') }}
+                                        </h3>
+                                        <div class="flex justify-between text-sm items-center">
+                                            <span class="text-slate-500 flex items-center gap-2">
+                                                <x-icon name="heroicon-o-user" class="w-4 h-4 text-red-500" />
+                                                {{ __('Single Visit Resolutions') }}:
+                                            </span>
+                                            <span class="font-medium text-red-600 dark:text-red-400">{{ number_format($aggregates['categories_with_single_visit']) }}</span>
+                                        </div>
+                                        <div class="flex justify-between text-sm items-center">
+                                            <span class="text-slate-500 flex items-center gap-2">
+                                                <x-icon name="heroicon-o-users" class="w-4 h-4 text-orange-500" />
+                                                {{ __('Multiple Visit Resolutions') }}:
+                                            </span>
+                                            <span class="font-medium text-orange-600 dark:text-orange-400">{{ number_format($aggregates['categories_with_multiple_visits']) }}</span>
+                                        </div>
+                                        <div class="flex justify-between text-sm items-center">
+                                            <span class="text-slate-500 flex items-center gap-2">
+                                                <x-icon name="heroicon-o-bolt" class="w-4 h-4 text-yellow-500" />
+                                                {{ __('Peak Activity') }}:
+                                            </span>
+                                            <span class="font-medium text-yellow-600 dark:text-yellow-400">{{ number_format($aggregates['peak_activity_percentage'], 1) }}%</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Advanced Metrics -->
+                                    <div class="space-y-2">
+                                        <h3 class="font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                                            <x-icon name="heroicon-o-beaker" class="w-5 h-5 text-fuchsia-500" />
+                                            {{ __('Advanced Metrics') }}
+                                        </h3>
+                                        <div class="flex justify-between text-sm items-center">
+                                            <span class="text-slate-500 flex items-center gap-2">
+                                                <x-icon name="heroicon-o-variable" class="w-4 h-4 text-pink-500" />
+                                                {{ __('Diversity Index') }}:
+                                            </span>
+                                            <span class="font-medium text-pink-600 dark:text-pink-400">{{ number_format($aggregates['category_diversity_index'], 2) }}</span>
+                                        </div>
+                                        <div class="flex justify-between text-sm items-center">
+                                            <span class="text-slate-500 flex items-center gap-2">
+                                                <x-icon name="heroicon-o-document-text" class="w-4 h-4 text-violet-500" />
+                                                {{ __('Metadata Coverage') }}:
+                                            </span>
+                                            <span class="font-medium text-violet-600 dark:text-violet-400">{{ number_format(($aggregates['categories_with_meta_data'] / max(1, $aggregates['categories_with_meta_data'] + $aggregates['categories_without_meta_data'])) * 100, 1) }}%</span>
+                                        </div>
+                                        <div class="flex justify-between text-sm items-center">
+                                            <span class="text-slate-500 flex items-center gap-2">
+                                                <x-icon name="heroicon-o-clipboard-document-list" class="w-4 h-4 text-cyan-500" />
+                                                {{ __('Avg Meta/Resolution') }}:
+                                            </span>
+                                            <span class="font-medium text-cyan-600 dark:text-cyan-400">{{ number_format($aggregates['average_meta_data_per_category'], 1) }}</span>
+                                        </div>
+                                        <div class="flex justify-between text-sm items-center">
+                                            <span class="text-slate-500 flex items-center gap-2">
+                                                <x-icon name="heroicon-o-clock" class="w-4 h-4 text-lime-500" />
+                                                {{ __('Active Hours/Day') }}:
+                                            </span>
+                                            <span class="font-medium text-lime-600 dark:text-lime-400">{{ number_format($aggregates['average_active_hours'] ?? 0, 1) }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4" x-data="{ openCards: {} }">
+                            @foreach($resolutions as $resolution)
+                                <div class="relative bg-slate-50/50 dark:bg-slate-700/20 rounded-xl p-6"
+                                    x-data="{
+                                        index: {{ $loop->index }},
+                                        get isOpen() {
+                                            return $data.openCards[this.index] || false;
+                                        },
+                                        toggle() {
+                                            $data.openCards[this.index] = !this.isOpen;
+                                            if (this.isOpen) {
+                                                // Open adjacent card if it exists
+                                                const adjacentIndex = this.index % 2 === 0 ? this.index + 1 : this.index - 1;
+                                                $data.openCards[adjacentIndex] = true;
+                                            }
+                                        }
+                                    }"
+                                >
+                                    <!-- Header with Resolution and User Count -->
+                                    <div class="flex justify-between items-start mb-4">
+                                        <div class="flex items-center gap-3">
+                                            <x-icon name="{{ in_array('mobile', $resolution['meta_data']['device-type']['distribution'] ?? []) ? 'heroicon-o-device-phone-mobile' : 'heroicon-o-device-tablet' }}"
+                                                   class="w-6 h-6 text-slate-400" />
+                                            <div>
+                                                <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ $resolution['value'] }}</span>
+                                                <p class="text-sm text-slate-500">{{ number_format($resolution['percentage'], 1) }}% of total</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex flex-col items-end gap-1">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-800/30 dark:text-emerald-200">
+                                                {{ number_format($resolution['unique_visitors']) }} {{ __('Users') }}
+                                            </span>
+                                            <span class="text-sm text-slate-500">{{ number_format($resolution['total_visits']) }} {{ __('visits') }}</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Quick Stats Grid - Always Visible -->
+                                    <div class="grid grid-cols-3 gap-4 mb-4">
+                                        <div class="bg-white dark:bg-slate-800 rounded-lg p-3">
+                                            <p class="text-xs text-slate-500">{{ __('First Seen') }}</p>
+                                            <p class="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                                {{ Carbon\Carbon::parse($resolution['first_seen'])->format('M j, Y') }}
+                                            </p>
+                                        </div>
+                                        <div class="bg-white dark:bg-slate-800 rounded-lg p-3">
+                                            <p class="text-xs text-slate-500">{{ __('Visits/User') }}</p>
+                                            <p class="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                                {{ number_format($resolution['visits_per_visitor'], 1) }}
+                                            </p>
+                                        </div>
+                                        <div class="bg-white dark:bg-slate-800 rounded-lg p-3">
+                                            <p class="text-xs text-slate-500">{{ __('Active Days') }}</p>
+                                            <p class="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                                {{ number_format($resolution['visit_days']) }}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Most Common Device Type - Always Visible -->
+                                    @if(!empty($resolution['meta_data']['device-type']['most_common']))
+                                        <div class="flex items-center gap-2 mb-4 bg-white dark:bg-slate-800 rounded-lg p-3">
+                                            <span class="text-sm text-slate-500">{{ __('Most Common Device') }}:</span>
+                                            <span class="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                                {{ ucfirst($resolution['meta_data']['device-type']['most_common']) }}
+                                            </span>
+                                            <span class="text-xs px-2 py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded">
+                                                {{ number_format($resolution['meta_data']['device-type']['most_common_percentage'] ?? 0, 1) }}%
+                                            </span>
+                                        </div>
+                                    @endif
+
+                                    <!-- Show More Button -->
+                                    <button
+                                        @click="toggle()"
+                                        class="w-full py-2 px-4 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-700/50 rounded-lg transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <span x-text="isOpen ? '{{ __('Show Less') }}' : '{{ __('Show More Details') }}'"></span>
+                                        <x-icon
+                                            :name="'heroicon-o-chevron-down'"
+                                            class="w-4 h-4 transition-transform"
+                                            ::class="isOpen ? 'rotate-180' : ''"
+                                        />
+                                    </button>
+
+                                    <!-- Detailed Content -->
+                                    <div x-show="isOpen" x-collapse class="mt-4 space-y-4">
+                                        <!-- Visit Days and Percentage -->
+                                        <div class="grid grid-cols-2 gap-4 text-sm">
+                                            <div>
+                                                <p class="text-slate-500 dark:text-slate-400">{{ __('Visit Days') }}</p>
+                                                <p class="font-medium text-slate-700 dark:text-slate-300">{{ number_format($resolution['visit_days']) }}</p>
+                                            </div>
+                                            <div>
+                                                <p class="text-slate-500 dark:text-slate-400">{{ __('Percentage') }}</p>
+                                                <p class="font-medium text-slate-700 dark:text-slate-300">{{ number_format($resolution['percentage'], 1) }}%</p>
+                                            </div>
+                                        </div>
+
+                                        <!-- Hourly Distribution Chart -->
+                                        <div class="border-t border-slate-200 dark:border-slate-700 pt-4">
+                                            <p class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">{{ __('Hourly Distribution') }}</p>
+                                            <div class="h-32">
+                                                <canvas
+                                                    x-data="{
+                                                        chart: null,
+                                                        init() {
+                                                            const hourlyData = {{ Js::from($resolution['hourly_distribution']) }};
+                                                            this.chart = new Chart(this.$el, {
+                                                                type: 'bar',
+                                                                data: {
+                                                                    labels: Array.from({length: 24}, (_, i) => `${String(i).padStart(2, '0')}:00`),
+                                                                    datasets: [{
+                                                                        data: hourlyData,
+                                                                        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                                                                        hoverBackgroundColor: 'rgba(16, 185, 129, 0.3)',
+                                                                        borderRadius: 4
+                                                                    }]
+                                                                },
+                                                                options: {
+                                                                    responsive: true,
+                                                                    maintainAspectRatio: false,
+                                                                    plugins: {
+                                                                        legend: {
+                                                                            display: false
+                                                                        },
+                                                                        tooltip: {
+                                                                            callbacks: {
+                                                                                title: function(context) {
+                                                                                    const hour = parseInt(context[0].label);
+                                                                                    return `${hour % 12 || 12}:00 ${hour < 12 ? 'AM' : 'PM'}`;
+                                                                                },
+                                                                                label: function(context) {
+                                                                                    return `Visits: ${context.parsed.y}`;
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    scales: {
+                                                                        x: {
+                                                                            display: false
+                                                                        },
+                                                                        y: {
+                                                                            beginAtZero: true,
+                                                                            grid: {
+                                                                                color: 'rgba(148, 163, 184, 0.1)'
+                                                                            },
+                                                                            ticks: {
+                                                                                color: 'rgb(148, 163, 184)'
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            });
+                                                        }
+                                                    }"
+                                                ></canvas>
+                                            </div>
+                                            <div class="flex justify-between mt-1 text-xs text-slate-500">
+                                                <span>{{ __('12:00 AM') }}</span>
+                                                <span>{{ __('12:00 PM') }}</span>
+                                                <span>{{ __('11:59 PM') }}</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Meta Data -->
+                                        @if(!empty($resolution['meta_data']))
+                                            <div class="border-t border-slate-200 dark:border-slate-700 pt-4">
+                                                <p class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-4">{{ __('Resolution Details') }}</p>
+                                                <div class="grid grid-cols-2 gap-6">
+                                                    @foreach($resolution['meta_data'] as $key => $meta)
+                                                        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4">
+                                                            <p class="text-sm font-medium text-slate-700 dark:text-slate-300 capitalize mb-2">
+                                                                {{ str_replace('-', ' ', $key) }}
+                                                            </p>
+                                                            @if(isset($meta['most_common']))
+                                                                <div class="flex items-center gap-2 mb-3">
+                                                                    <span class="text-sm font-medium text-slate-900 dark:text-slate-100">
+                                                                        {{ $meta['most_common'] }}
+                                                                    </span>
+                                                                    <span class="text-xs px-2 py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded">
+                                                                        {{ number_format($meta['most_common_percentage'] ?? 0, 1) }}%
+                                                                    </span>
+                                                                </div>
+                                                                <div class="space-y-2">
+                                                                    @foreach($meta['distribution'] ?? [] as $value => $count)
+                                                                        <div class="flex gap-4 items-center text-xs">
+                                                                            <span class="text-slate-600 dark:text-slate-400">{{ $value }}</span>
+                                                                            <div class="flex-1 relative h-2 bg-slate-100 dark:bg-slate-700 rounded">
+                                                                                <div class="absolute left-0 top-0 h-full bg-emerald-200 dark:bg-emerald-800 rounded"
+                                                                            style="width: {{ $meta['distribution_percentages'][$value] ?? 0 }}%"></div>
+                                                                            </div>
+                                                                            <span class="text-slate-500 dark:text-slate-500">
+                                                                                {{ $count }} ({{ number_format($meta['distribution_percentages'][$value] ?? 0, 1) }}%)
+                                                                            </span>
+                                                                        </div>
+                                                                    @endforeach
+                                                                </div>
+                                                            @endif
                                                         </div>
-                                                        <div class="flex items-center space-x-2 mt-1">
-                                                            <x-tooltip text="First seen {{ $screenResolution->created_at->diffForHumans() }}" class="group-hover:opacity-100">
-                                                                <span class="text-xs text-fuchsia-400 hover:text-fuchsia-300 transition-colors">
-                                                                    <x-icon name="heroicon-o-clock" class="w-3 h-3 inline mr-1 text-fuchsia-300" />
-                                                                    {{ __('First seen') }} {{ $screenResolution->created_at->diffForHumans() }}
-                                                                </span>
-                                                            </x-tooltip>
-                                                            <x-tooltip text="Last seen {{ $screenResolution->updated_at->diffForHumans() }}" class="group-hover:opacity-100">
-                                                                <span class="text-xs text-fuchsia-400 hover:text-fuchsia-300 transition-colors">
-                                                                    <x-icon name="heroicon-o-arrow-path" class="w-3 h-3 inline mr-1 text-fuchsia-300" />
-                                                                    {{ __('Last seen') }} {{ $screenResolution->updated_at->diffForHumans() }}
-                                                                </span>
-                                                            </x-tooltip>
-                                                        </div>
-                                                    </div>
-                                                    <div class="flex items-center space-x-2">
-                                                        <x-tooltip text="Average daily pageviews" class="group-hover:opacity-100">
-                                                            <span class="px-2 py-0.5 text-xs rounded-full bg-fuchsia-700 hover:bg-fuchsia-600 transition-colors duration-300">
-                                                                <x-icon name="heroicon-o-chart-bar" class="w-3 h-3 inline mr-1" />
-                                                                {{ round($screenResolution->count / max(1, (strtotime($screenResolution->updated_at) - strtotime($screenResolution->created_at)) / 86400), 1) }} {{ __('views/day') }}
-                                                            </span>
-                                                        </x-tooltip>
-                                                    </div>
+                                                    @endforeach
                                                 </div>
                                             </div>
-                                            <div class="flex flex-col space-y-1">
-                                                <div class="overflow-hidden h-2 text-xs flex rounded-lg bg-fuchsia-700/30">
-                                                    <div style="width: {{ $aggregates['total_count'] > 0 ? ($screenResolution->count / $aggregates['total_count']) * 100 : 0 }}%"
-                                                        class="shadow-lg bg-gradient-to-r from-fuchsia-400 to-fuchsia-600 transition-all duration-300 hover:from-fuchsia-300 hover:to-fuchsia-500">
+                                        @endif
+
+                                        <!-- Peak Hours -->
+                                        <div class="border-t border-slate-200 dark:border-slate-700 pt-4">
+                                            <p class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">{{ __('Peak Hours') }}</p>
+                                            <div class="flex gap-2">
+                                                @foreach($resolution['peak_hours'] as $hour)
+                                                    <span class="px-2 py-1 text-xs font-medium bg-slate-100 dark:bg-slate-700 rounded text-slate-700 dark:text-slate-300">
+                                                        {{ sprintf('%02d:00', $hour) }}
+                                                    </span>
+                                                @endforeach
+                                            </div>
+                                        </div>
+
+                                        <!-- Visitor Stats -->
+                                        <div class="border-t border-slate-200 dark:border-slate-700 pt-4">
+                                            <div class="grid grid-cols-3 gap-4">
+                                                <div>
+                                                    <div class="flex items-start space-x-3">
+                                                        <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                                                            <x-icon name="heroicon-o-users" class="w-5 h-5 text-blue-500 dark:text-blue-400"/>
+                                                        </div>
+                                                        <div>
+                                                            <p class="text-slate-500 dark:text-slate-400 text-xs">{{ __('Unique Visitors') }}</p>
+                                                            <p class="font-semibold text-slate-800 dark:text-slate-200 mt-0.5">{{ number_format($resolution['unique_visitor_count']) }}</p>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <div class="flex justify-between text-xs text-fuchsia-300">
-                                                    <div class="flex space-x-4">
-                                                        <x-tooltip text="Total pageviews with this resolution" class="group-hover:opacity-100">
-                                                            <span class="hover:text-fuchsia-200 transition-colors">
-                                                                <x-icon name="heroicon-o-eye" class="w-3 h-3 inline mr-1" />
-                                                                {{ number_format($screenResolution->count, 0, __('.'), __(',')) }} {{ __('pageviews') }}
-                                                            </span>
-                                                        </x-tooltip>
+                                                <div>
+                                                    <div class="flex items-start space-x-3">
+                                                        <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-900/20">
+                                                            <x-icon name="heroicon-o-arrow-path" class="w-5 h-5 text-emerald-500 dark:text-emerald-400"/>
+                                                        </div>
+                                                        <div>
+                                                            <p class="text-slate-500 dark:text-slate-400 text-xs">{{ __('Total Visits') }}</p>
+                                                            <p class="font-semibold text-slate-800 dark:text-slate-200 mt-0.5">{{ number_format($resolution['total_visits']) }}</p>
+                                                        </div>
                                                     </div>
-                                                    <div class="flex space-x-4">
-                                                        <x-tooltip text="Percentage of total pageviews" class="group-hover:opacity-100">
-                                                            <span class="hover:text-fuchsia-200 transition-colors">
-                                                                <x-icon name="heroicon-o-chart-pie" class="w-3 h-3 inline mr-1" />
-                                                                {{ $aggregates['total_count'] > 0 ? number_format(($screenResolution->count / $aggregates['total_count']) * 100, 1) : 0 }}% {{ __('of pageviews') }}
-                                                            </span>
-                                                        </x-tooltip>
+                                                </div>
+                                                <div>
+                                                    <div class="flex items-start space-x-3">
+                                                        <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-purple-50 dark:bg-purple-900/20">
+                                                            <x-icon name="heroicon-o-chart-bar" class="w-5 h-5 text-purple-500 dark:text-purple-400"/>
+                                                        </div>
+                                                        <div>
+                                                            <p class="text-slate-500 dark:text-slate-400 text-xs">{{ __('Visits/Visitor') }}</p>
+                                                            <p class="font-semibold text-slate-800 dark:text-slate-200 mt-0.5">{{ number_format($resolution['visits_per_visitor'], 1) }}</p>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -119,194 +445,22 @@
                                 </div>
                             @endforeach
                         </div>
-                    </x-analytics::view>
 
-                    <x-analytics::view view="cards" color="fuchsia" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        @foreach($data as $screenResolution)
-                            <div class="bg-gradient-to-br from-fuchsia-900 to-fuchsia-950 rounded-xl shadow-lg border border-fuchsia-800 p-2 hover:scale-[1.02] transition-transform duration-200">
-                                <div class="flex items-center justify-between mb-4">
-                                    <div class="flex items-center space-x-4">
-                                        <div class="relative">
-                                            <div class="absolute inset-0 bg-fuchsia-800/20 blur-xl rounded-full"></div>
-                                            <div class="relative bg-gradient-to-br from-fuchsia-700 to-fuchsia-900 p-3 rounded-full">
-                                                <x-icon name="heroicon-o-computer-desktop" class="w-6 h-6 text-fuchsia-200" />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <div class="flex flex-wrap gap-2 mb-2">
-                                                <x-tooltip text="{{ str_contains($screenResolution->value, '@2x') ? 'High-density display using 2 physical pixels per logical pixel' : (str_contains($screenResolution->value, '@3x') ? 'High-density display using 3 physical pixels per logical pixel' : 'Standard display resolution') }}">
-                                                    <span class="px-2.5 py-1 text-xs font-medium rounded-full bg-fuchsia-700/50 text-fuchsia-200 hover:bg-fuchsia-600/50 transition-colors duration-200">
-                                                        <x-icon name="heroicon-o-computer-desktop" class="w-3 h-3 inline mr-1" />
-                                                        {{ $screenResolution->value ? $screenResolution->value : __('Unknown') }}
-                                                    </span>
-                                                </x-tooltip>
-                                            </div>
-                                            <div class="text-xs text-fuchsia-400 break-all hover:text-fuchsia-300 transition-colors duration-200">
-                                                <x-icon name="heroicon-o-clock" class="w-3 h-3 inline mr-1" />
-                                                {{ __('First seen') }} {{ $screenResolution->created_at->diffForHumans() }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="flex flex-col space-y-3">
-                                    <div class="grid grid-cols-2 gap-4 text-sm">
-                                        <x-tooltip text="Total pageviews with this resolution">
-                                            <div class="bg-fuchsia-800/20 rounded-lg p-3 hover:bg-fuchsia-700/30 transition-colors duration-200">
-                                                <span class="text-fuchsia-300">
-                                                    <x-icon name="heroicon-o-eye" class="w-3 h-3 inline mr-1" />
-                                                    {{ __('Pageviews') }}
-                                                </span>
-                                                <span class="text-fuchsia-100 font-semibold ml-2">{{ number_format($screenResolution->count, 0, __('.'), __(',')) }}</span>
-                                            </div>
-                                        </x-tooltip>
-                                        <x-tooltip text="Average daily pageviews">
-                                            <div class="bg-fuchsia-800/20 rounded-lg p-3 hover:bg-fuchsia-700/30 transition-colors duration-200">
-                                                <span class="text-fuchsia-300">
-                                                    <x-icon name="heroicon-o-chart-bar" class="w-3 h-3 inline mr-1" />
-                                                    {{ __('Daily Avg') }}
-                                                </span>
-                                                <span class="text-fuchsia-100 font-semibold ml-2">{{ round($screenResolution->count / max(1, (strtotime($screenResolution->updated_at) - strtotime($screenResolution->created_at)) / 86400), 1) }}</span>
-                                            </div>
-                                        </x-tooltip>
-                                    </div>
-                                    <div class="relative pt-1">
-                                        <div class="overflow-hidden h-3 text-xs flex rounded-lg bg-fuchsia-700/30">
-                                            <div style="width: {{ $aggregates['total_count'] > 0 ? ($screenResolution->count / $aggregates['total_count']) * 100 : 0 }}%"
-                                                class="shadow-none bg-gradient-to-r from-fuchsia-400 to-fuchsia-600 transition-all duration-500 hover:from-fuchsia-500 hover:to-fuchsia-700">
-                                            </div>
-                                        </div>
-                                        <x-tooltip text="Percentage of total pageviews">
-                                            <div class="text-xs text-fuchsia-300 mt-2 text-right font-medium">
-                                                <x-icon name="heroicon-o-chart-pie" class="w-3 h-3 inline mr-1" />
-                                                {{ number_format(($screenResolution->count / $aggregates['total_count']) * 100, 1) }}% {{ __('of total') }}
-                                            </div>
-                                        </x-tooltip>
-                                    </div>
-                                </div>
-                            </div>
-                        @endforeach
-                    </x-analytics::view>
-
-                    <x-analytics::view view="compact" color="fuchsia" class="overflow-hidden rounded-xl border border-fuchsia-800 shadow-lg shadow-fuchsia-900/20">
-                        <table class="min-w-full divide-y divide-fuchsia-800">
-                            <thead class="bg-gradient-to-br from-fuchsia-900 to-fuchsia-950">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-fuchsia-300 uppercase tracking-wider cursor-pointer hover:text-fuchsia-200 transition-colors duration-200" wire:click="$set('sort', '{{ $sort === 'asc' ? 'desc' : 'asc' }}'); $set('sortBy', 'value')">
-                                        <div class="flex items-center">
-                                            <x-tooltip text="Sort by resolution">
-                                                <span><x-icon name="heroicon-o-computer-desktop" class="w-4 h-4 inline mr-1" />{{ __('Resolution') }}</span>
-                                            </x-tooltip>
-                                            @if($sortBy === 'value')
-                                                @if($sort === 'asc')
-                                                    <x-heroicon-s-chevron-up class="w-4 h-4 ml-1 text-fuchsia-200" />
-                                                @else
-                                                    <x-heroicon-s-chevron-down class="w-4 h-4 ml-1 text-fuchsia-200" />
-                                                @endif
-                                            @endif
-                                        </div>
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-fuchsia-300 uppercase tracking-wider cursor-pointer hover:text-fuchsia-200 transition-colors duration-200" wire:click="$set('sort', '{{ $sort === 'asc' ? 'desc' : 'asc' }}'); $set('sortBy', 'count')">
-                                        <div class="flex items-center justify-end">
-                                            <x-tooltip text="Sort by number of pageviews">
-                                                <div class="flex items-center">
-                                                    <x-icon name="heroicon-o-eye" class="w-4 h-4 inline mr-1" />
-                                                    {{ __('Pageviews') }}
-                                                </div>
-                                            </x-tooltip>
-                                            @if($sortBy === 'count')
-                                                @if($sort === 'asc')
-                                                    <x-heroicon-s-chevron-up class="w-4 h-4 ml-1 text-fuchsia-200" />
-                                                @else
-                                                    <x-heroicon-s-chevron-down class="w-4 h-4 ml-1 text-fuchsia-200" />
-                                                @endif
-                                            @endif
-                                        </div>
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-fuchsia-300 uppercase tracking-wider">
-                                        <x-tooltip text="Average daily pageviews">
-                                            <span><x-icon name="heroicon-o-chart-bar" class="w-4 h-4 inline mr-1" />{{ __('Daily Avg') }}</span>
-                                        </x-tooltip>
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-fuchsia-300 uppercase tracking-wider">
-                                        <x-tooltip text="First seen">
-                                            <span><x-icon name="heroicon-o-clock" class="w-4 h-4 inline mr-1" />{{ __('First Seen') }}</span>
-                                        </x-tooltip>
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-fuchsia-300 uppercase tracking-wider">
-                                        <x-tooltip text="Last seen">
-                                            <span><x-icon name="heroicon-o-arrow-path" class="w-4 h-4 inline mr-1" />{{ __('Last Seen') }}</span>
-                                        </x-tooltip>
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-fuchsia-300 uppercase tracking-wider">
-                                        <x-tooltip text="Percentage of total pageviews">
-                                            <span><x-icon name="heroicon-o-chart-pie" class="w-4 h-4 inline mr-1" />{{ __('Usage') }}</span>
-                                        </x-tooltip>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-gradient-to-br from-fuchsia-950 to-fuchsia-900/90 divide-y divide-fuchsia-800/50">
-                                @foreach($data as $screenResolution)
-                                    <tr class="hover:bg-fuchsia-900/50 transition-colors duration-200">
-                                        <td class="px-6 py-4">
-                                            <div class="flex items-center">
-                                                <div class="text-sm text-fuchsia-100">
-                                                    <x-tooltip text="{{ str_contains($screenResolution->value, '@2x') ? 'High-density display using 2 physical pixels per logical pixel' : (str_contains($screenResolution->value, '@3x') ? 'High-density display using 3 physical pixels per logical pixel' : 'Standard display resolution') }}">
-                                                        <span>
-                                                            <x-icon name="heroicon-o-computer-desktop" class="w-4 h-4 inline mr-1" />
-                                                            {{ $screenResolution->value ? $screenResolution->value : __('Unknown') }}
-                                                        </span>
-                                                    </x-tooltip>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-fuchsia-100">
-                                            <x-tooltip text="Total pageviews with this resolution">
-                                                {{ number_format($screenResolution->count, 0, __('.'), __(',')) }}
-                                            </x-tooltip>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-fuchsia-100">
-                                            <x-tooltip text="Average daily pageviews">
-                                                {{ round($screenResolution->count / max(1, (strtotime($screenResolution->updated_at) - strtotime($screenResolution->created_at)) / 86400), 1) }}
-                                            </x-tooltip>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right">
-                                            <span class="px-2.5 py-1 text-xs font-medium rounded-full bg-gradient-to-r from-fuchsia-700/60 to-fuchsia-600/60 text-fuchsia-100 shadow-sm">
-                                                <x-icon name="heroicon-o-clock" class="w-3 h-3 inline mr-1" />
-                                                {{ $screenResolution->created_at->diffForHumans() }}
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right">
-                                            <span class="px-2.5 py-1 text-xs font-medium rounded-full bg-gradient-to-r from-fuchsia-700/60 to-fuchsia-600/60 text-fuchsia-100 shadow-sm">
-                                                <x-icon name="heroicon-o-arrow-path" class="w-3 h-3 inline mr-1" />
-                                                {{ $screenResolution->updated_at->diffForHumans() }}
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <x-tooltip text="Percentage of total pageviews: {{ number_format(($screenResolution->count / $aggregates['total_count']) * 100, 1) }}%">
-                                                <div class="w-32 h-2.5 text-xs flex rounded-full bg-fuchsia-800/30 ml-auto overflow-hidden">
-                                                    <div style="width: {{ $aggregates['total_count'] > 0 ? ($screenResolution->count / $aggregates['total_count']) * 100 : 0 }}%"
-                                                        class="shadow-lg bg-gradient-to-r from-fuchsia-500 to-fuchsia-400 transition-all duration-300 hover:from-fuchsia-400 hover:to-fuchsia-300">
-                                                    </div>
-                                                </div>
-                                                <div class="text-xs font-medium text-fuchsia-300 mt-1.5 text-right">
-                                                    <x-icon name="heroicon-o-chart-pie" class="w-3 h-3 inline mr-1" />
-                                                    {{ number_format(($screenResolution->count / $aggregates['total_count']) * 100, 1) }}%
-                                                </div>
-                                            </x-tooltip>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </x-analytics::view>
-
+                        <!-- Pagination -->
+                        <x-pagination :paginator="$resolutions" type="compact"/>
+                    </div>
                 </div>
-
-                <div class="mt-6">
-                    <x-analytics::pagination :data="$data" />
-                </div>
-            @endif
-        </div>
+            </div>
+        @else
+            <div class="flex flex-col items-center justify-center py-20 bg-gradient-to-br from-slate-50 to-white dark:from-slate-900/90 dark:to-slate-800/90 rounded-2xl border border-dashed border-slate-200/60 dark:border-slate-700/60">
+                <x-icon name="heroicon-o-device-tablet" class="w-12 h-12 text-slate-400 mb-4"/>
+                <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2">{{ __('No Screen Resolution Data Available') }}</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('Start Monitoring To Collect Screen Resolution Metrics') }}</p>
+            </div>
+        @endif
     </div>
-</x-website>
+</x-site>
+
+@pushOnce('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+@endPushOnce

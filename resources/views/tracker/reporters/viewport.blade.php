@@ -33,7 +33,7 @@ trackViewport() {
 
         // Only report if dimensions actually changed
         if (lastDimensions && JSON.stringify(currentDimensions) === JSON.stringify(lastDimensions)) {
-            utils.debugLog('Viewport unchanged, skipping report');
+            utils.debugInfo('Viewport unchanged, skipping report');
             return;
         }
 
@@ -53,7 +53,7 @@ trackViewport() {
             }
         });
 
-        utils.debugLog('Viewport change tracked:', currentDimensions);
+        utils.debugInfo('Viewport change tracked:', currentDimensions);
     }, 1000); // Reduced throttle time for more responsive tracking
 
     // Track on resize with passive listener for better performance

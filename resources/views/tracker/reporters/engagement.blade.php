@@ -106,7 +106,7 @@ trackEngagement() {
                 value: engagementMetrics
             });
 
-            utils.debugLog('Engagement metrics reported:', engagementMetrics);
+            utils.debugInfo('Engagement metrics reported:', engagementMetrics);
             TSMonitor.instance.engagementScore = 0;
         }
     }, 10000);

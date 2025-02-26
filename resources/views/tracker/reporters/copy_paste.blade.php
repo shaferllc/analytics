@@ -42,7 +42,7 @@ trackCopyPaste() {
             }
         });
 
-        utils.debugLog(`${eventType} event tracked:`, {
+        utils.debugInfo(`${eventType} event tracked:`, {
             count: this.copyPasteCount,
             element: elementInfo,
             selectedLength: selectedText.length,

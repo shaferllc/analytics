@@ -53,7 +53,7 @@ trackMouseMovements() {
                 }
             });
             this.mouseMovements = [];
-            utils.debugLog('Mouse movements tracked and sent');
+            utils.debugInfo('Mouse movements tracked and sent');
         }
     }, 200);
 

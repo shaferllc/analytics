@@ -15,7 +15,7 @@ trackHeatmapClicks() {
         const target = event.composedPath ? event.composedPath()[0] : event.target;
         if (!target) return;
 
-        utils.debugLog('Interaction queued:', {type, target, extraData});
+        utils.debugInfo('Interaction queued:', {type, target, extraData});
 
         const rect = target instanceof Element ? target.getBoundingClientRect() : { top: 0, left: 0, width: 0, height: 0 };
         const attributes = {};
@@ -89,7 +89,7 @@ trackHeatmapClicks() {
             ...extraData
         });
 
-        utils.debugLog('Interaction data:', interactions[interactions.length - 1]);
+        utils.debugInfo('Interaction data:', interactions[interactions.length - 1]);
     };
 
     // Track mouse movements with velocity and acceleration
@@ -117,7 +117,7 @@ trackHeatmapClicks() {
         if (TSMonitor.debugEnabled()) {
             cursor.style.left = `${event.clientX - 5}px`;
             cursor.style.top = `${event.clientY - 5}px`;
-            utils.debugLog('Mouse Move:', {
+            utils.debugInfo('Mouse Move:', {
                 x: event.pageX,
                 y: event.pageY,
                 velocity: {x: velocityX, y: velocityY},
@@ -157,7 +157,7 @@ trackHeatmapClicks() {
 
     // Track clicks with pressure and additional context
     document.addEventListener('click', (event) => {
-        utils.debugLog('Click detected:', {x: event.pageX, y: event.pageY});
+        utils.debugInfo('Click detected:', {x: event.pageX, y: event.pageY});
         const pressure = event.pressure || (event.originalEvent && event.originalEvent.pressure);
         queueInteraction('click', event, {
             pressure: pressure || null,
@@ -172,13 +172,13 @@ trackHeatmapClicks() {
 
     // Track mousedown timing
     document.addEventListener('mousedown', (event) => {
-        utils.debugLog('Mouse down:', {x: event.pageX, y: event.pageY});
+        utils.debugInfo('Mouse down:', {x: event.pageX, y: event.pageY});
         event.target._mouseDownTime = event.timeStamp;
     });
 
     // Touch events tracking
     document.addEventListener('touchstart', (event) => {
-        utils.debugLog('Touch start:', {
+        utils.debugInfo('Touch start:', {
             x: event.touches[0].pageX,
             y: event.touches[0].pageY
         });
@@ -196,7 +196,7 @@ trackHeatmapClicks() {
     document.addEventListener('touchend', (event) => {
         if (touchStartTime && touchStartPosition) {
             const touchDuration = Date.now() - touchStartTime;
-            utils.debugLog('Touch end:', {
+            utils.debugInfo('Touch end:', {
                 duration: touchDuration,
                 startPos: touchStartPosition,
                 endPos: {
@@ -216,7 +216,7 @@ trackHeatmapClicks() {
 
     // Track hover enter with additional context
     document.addEventListener('mouseenter', (event) => {
-        utils.debugLog('Mouse enter:', {
+        utils.debugInfo('Mouse enter:', {
             element: event.target,
             x: event.pageX,
             y: event.pageY
@@ -237,7 +237,7 @@ trackHeatmapClicks() {
     document.addEventListener('mouseleave', (event) => {
         if (currentHoveredElement === event.target && hoverStartTime) {
             const hoverDuration = Date.now() - hoverStartTime;
-            utils.debugLog('Mouse leave:', {
+            utils.debugInfo('Mouse leave:', {
                 element: event.target,
                 duration: hoverDuration,
                 x: event.pageX,
@@ -275,7 +275,7 @@ trackHeatmapClicks() {
             return;
         }
 
-        utils.debugLog('Scroll:', {
+        utils.debugInfo('Scroll:', {
             position: scrollPosition,
             direction: scrollPosition > scrollStartPosition ? 'down' : 'up'
         });
@@ -297,7 +297,7 @@ trackHeatmapClicks() {
     setInterval(() => {
         if (currentHoveredElement && hoverStartTime) {
             const hoverDuration = Date.now() - hoverStartTime;
-            utils.debugLog('Hover update:', {
+            utils.debugInfo('Hover update:', {
                 element: currentHoveredElement,
                 duration: hoverDuration,
                 x: window.mouseX,
@@ -329,7 +329,7 @@ trackHeatmapClicks() {
         if ((interactions.length > 0 || mousePositions.length > 0) &&
             (currentTime - lastQueueTime >= QUEUE_INTERVAL)) {
 
-            utils.debugLog('Queueing heatmap data:', {
+            utils.debugInfo('Queueing heatmap data:', {
                 interactions: interactions.length,
                 mouseMovements: mousePositions.length
             });
@@ -370,7 +370,7 @@ trackHeatmapClicks() {
         clearInterval(autoSaveInterval);
 
         if (interactions.length > 0 || mousePositions.length > 0) {
-            utils.debugLog('Final heatmap data save:', {
+            utils.debugInfo('Final heatmap data save:', {
                 interactions: interactions.length,
                 mouseMovements: mousePositions.length
             });
@@ -504,7 +504,7 @@ trackHeatmapClicks() {
             if (TSMonitor.debugEnabled() && cursor.parentNode) {
                 cursor.parentNode.removeChild(cursor);
             }
-            utils.debugLog('Cleanup completed');
+            utils.debugInfo('Cleanup completed');
             observer.disconnect();
             recentClicks = [];
         }

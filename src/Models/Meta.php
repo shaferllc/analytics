@@ -14,37 +14,21 @@ use Spatie\SchemalessAttributes\Casts\SchemalessAttributes;
 
 class Meta extends Model
 {
-    use HasUlids;
-
-    protected $table = 'analytics_meta';
+    protected $table = 'analytics_metas';
 
     protected $fillable = [
-        'itemable_id',
-        'itemable_type',
         'metaable_id',
         'metaable_type',
-        'meta_data',
-        'meta_type',
-        'parent_id',
-        'parent_type',
-        'visit_count',
+        'meta_key',
+        'meta_value',
+        'timestamp',
     ];
 
     protected $casts = [
-        'meta_data' => SchemalessAttributes::class,
-        'visit_count' => 'integer',
+        'timestamp' => 'datetime',
     ];
 
-    public function scopeMetaDataAttributes(): Builder
-    {
-        return $this->meta_data->modelScope();
-    }
     public function metaable(): MorphTo
-    {
-        return $this->morphTo();
-    }
-
-    public function parentMeta(): MorphTo
     {
         return $this->morphTo();
     }

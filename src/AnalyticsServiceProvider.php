@@ -64,7 +64,7 @@ class AnalyticsServiceProvider extends PackageServiceProvider
             // 'shaferllc.analytics.livewire.analytics' => \Shaferllc\Analytics\Livewire\Analytics::class,
             'shaferllc.analytics.livewire.browsers' => \Shaferllc\Analytics\Livewire\Browsers::class,
             'shaferllc.analytics.livewire.screen-resolutions' => \Shaferllc\Analytics\Livewire\ScreenResolutions::class,
-            // 'shaferllc.analytics.livewire.overview' => \Shaferllc\Analytics\Livewire\Overview::class,
+            'shaferllc.analytics.livewire.overview' => \Shaferllc\Analytics\Livewire\Overview::class,
             // 'shaferllc.analytics.livewire.password' => \Shaferllc\Analytics\Livewire\Password::class,
             'shaferllc.analytics.livewire.cities' => \Shaferllc\Analytics\Livewire\Cities::class,
             'shaferllc.analytics.livewire.countries' => \Shaferllc\Analytics\Livewire\Countries::class,
@@ -83,6 +83,7 @@ class AnalyticsServiceProvider extends PackageServiceProvider
             'shaferllc.analytics.livewire.languages' => \Shaferllc\Analytics\Livewire\Languages::class,
             'shaferllc.analytics.livewire.sessions' => \Shaferllc\Analytics\Livewire\Sessions::class,
             'shaferllc.analytics.livewire.page' => \Shaferllc\Analytics\Livewire\Page::class,
+            'shaferllc.analytics.livewire.debug' => \Shaferllc\Analytics\Livewire\Debug::class,
             // 'shaferllc.analytics.livewire.exit_pages' => \Shaferllc\Analytics\Livewire\ExitPages::class,
         ];
 

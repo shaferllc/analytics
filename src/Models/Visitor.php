@@ -7,6 +7,9 @@ namespace Shaferllc\Analytics\Models;
 use App\Models\Site;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Shaferllc\Analytics\Models\Browser;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -15,7 +18,6 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
-use Spatie\SchemalessAttributes\Casts\SchemalessAttributes;
 
 class Visitor extends Model
 {
@@ -28,26 +30,48 @@ class Visitor extends Model
         'session_id',
         'timezone',
         'user_id',
+        'ip_address',
+        'user_agent',
+        'referer',
+        'country',
+        'city',
+        'region',
         'language',
+        'continent',
+        'latitude',
+        'longitude',
+        'last_visit_at',
+        'first_visit_at',
+        'total_visits',
+        'iso_time',
+        'locale_string',
+        'utc_string',
+        'start_time',
+        'unix_timestamp',
+        'time_zone',
+        'session_duration',
     ];
 
     protected $casts = [
-        'meta_data' => SchemalessAttributes::class,
+        'last_visit_at' => 'datetime',
+        'first_visit_at' => 'datetime',
+        'total_visits' => 'int',
+        'iso_time' => 'datetime',
+        'locale_string' => 'datetime',
+        'utc_string' => 'datetime',
+        'start_time' => 'datetime',
+        'unix_timestamp' => 'datetime',
     ];
 
-    public function meta(): MorphToMany
+    public function meta(): MorphMany
     {
-        return $this->morphToMany(Meta::class, 'metaable');
+        return $this->morphMany(Meta::class, 'metaable');
     }
 
-    public function scopeWithMetaData(): Builder
-    {
-        return $this->meta_data->modelScope();
-    }
 
     public function sites(): BelongsToMany
     {
-        return $this->belongsToMany(Site::class);
+        return $this->belongsToMany(Site::class, 'analytics_site_visitor');
     }
 
     public function pages(): BelongsToMany
@@ -56,18 +80,25 @@ class Visitor extends Model
             ->using(PageVisitor::class)
             ->as('page_visitor')
             ->withPivot([
-                'id',
-                'page_id',
-                'visitor_id',
-                'start_session_at',
-                'end_session_at',
-                'total_duration_seconds',
-                'total_time_spent',
-                'total_visits',
-                'last_visit_at',
+                'referrer',
+                'hash',
+                'query',
+                'campaign',
+                'landing_page',
+                'search_engine',
+                'social_network',
+                'start_time',
+                'performance_metrics',
+                'navigation_type',
+                'session_duration',
+                'page_depth',
+                'url_query',
+                'load_time',
                 'first_visit_at',
-                'total_time_spent',
+                'last_visit_at',
                 'total_visits',
+                'visit_key',
+                'is_base_record'
             ])->withTimestamps();
     }
 
@@ -85,13 +116,34 @@ class Visitor extends Model
             ]);
     }
 
-    public function sessions(): HasMany
+
+    public function browser(): HasOne
     {
-        return $this->hasMany(Sessions::class);
+        return $this->hasOne(Browser::class);
     }
+
 
     public function events(): BelongsToMany
     {
         return $this->belongsToMany(Event::class, 'analytics_event_visitors');
+    }
+
+    public function site(): BelongsTo
+    {
+        return $this->belongsTo(Site::class);
+    }
+
+    // Helper method to get total visits across all pages
+    public function getTotalPageVisits(): int
+    {
+        return $this->pages()
+            ->wherePivot('is_base_record', true)
+            ->sum('total_visits');
+    }
+
+    // Helper method to increment total visits
+    public function incrementTotalVisits(): void
+    {
+        $this->increment('total_visits');
     }
 }

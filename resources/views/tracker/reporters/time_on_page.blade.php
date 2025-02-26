@@ -1,6 +1,6 @@
 trackTimeOnPage() {
     if (!window || !document) {
-        utils.debugLog('Window or document not available');
+        utils.debugError('Window or document not available');
         return 0;
     }
 

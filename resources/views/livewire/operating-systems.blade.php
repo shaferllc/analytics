@@ -1,227 +1,208 @@
-<x-website :website="$site">
-    <div class="space-y-4">
-        <x-analytics::breadcrumbs :breadcrumbs="[
-            [
-                'url' => route('websites.analytics.overview', ['website' => $site->id]),
-                'label' => __('Dashboard'),
-            ],
-            [
-                'url' => route('websites.analytics.technology', ['website' => $site->id]),
-                'label' => __('Technology'),
-                'icon' => 'heroicon-o-cpu-chip',
-            ],
-            [
-                'url' => route('websites.analytics.operating-systems', ['website' => $site->id]),
-                'label' => __('Operating Systems'),
-                'icon' => 'heroicon-o-computer-desktop',
-            ]
+<x-site :site="$site">
+    <div class="space-y-8">
+        <x-breadcrumbs :breadcrumbs="[
+            ['url' => route('sites.analytics.overview', ['site' => $site->id]), 'label' => __('Analytics Dashboard')],
+            ['url' => route('sites.analytics.operating-systems', ['site' => $site->id]), 'label' => __('Operating Systems'), 'icon' => 'heroicon-o-computer-desktop']
         ]" />
-        @include('analytics::livewire.partials.nav')
 
-        <x-analytics::title
-            :title="__('Operating Systems')"
-            :description="__('Operating systems used to access your website.')"
-            :totalPageviews="$total"
-            :icon="'heroicon-o-computer-desktop'"
-            :totalText="__('Total Operating Systems')"
-            :data="$data"
-            :total="$total"
-            :first="$first"
-            :last="$last"
-            :website="$site"
-            :daterange="$daterange"
-            :perPage="$perPage"
-            :sortBy="$sortBy"
-            :sort="$sort"
-            :from="$from"
-            :sortWords="['count' => __('Pageviews'), 'value' => __('Operating System')]"
-            :to="$to"
-            :search="$search"
-        />
+        <div class="flex justify-end gap-4">
+            <x-ts-dropdown position="bottom-end">
+                <x-slot:action>
+                    <x-ts-button x-on:click="show = !show" sm>{{ __('Time Range') }}</x-ts-button>
+                </x-slot:action>
+                <x-ts-dropdown.items wire:click="setTimeRange('today')" :active="$daterange === 'today'">{{ __('Today') }}</x-ts-dropdown.item>
+                <x-ts-dropdown.items wire:click="setTimeRange('7d')" :active="$daterange === '7d'">{{ __('Last 7 Days') }}</x-ts-dropdown.item>
+                <x-ts-dropdown.items wire:click="setTimeRange('30d')" :active="$daterange === '30d'">{{ __('Last 30 Days') }}</x-ts-dropdown.item>
+                <x-ts-dropdown.items wire:click="setTimeRange('90d')" :active="$daterange === '90d'">{{ __('Last 90 Days') }}</x-ts-dropdown.item>
+            </x-ts-dropdown>
 
-        <div>
-            @if(count($data) == 0)
-                <x-analytics::no-results />
-            @else
-                <div x-data="{ view: '{{ $display }}', hoveredItem: null, animate: true }"
-                     x-init="setTimeout(() => animate = false, 1000)"
-                     class="space-y-4">
-                    <x-analytics::view-switcher :data="$data" color="indigo" />
+            <x-ts-button wire:click="exportData" sm>
+                <x-icon name="heroicon-o-arrow-down-tray" class="w-4 h-4 mr-2" />
+                {{ __('Export') }}
+            </x-ts-button>
+        </div>
 
-                    <x-analytics::view view="list" color="indigo" class="bg-gradient-to-br from-indigo-900 to-indigo-950 rounded-xl shadow-lg border border-indigo-800 p-6 backdrop-blur-xl">
-                        <div class="flex flex-col space-y-6">
-                            @foreach($data as $operatingSystem)
-                                <div class="flex items-center space-x-4 group hover:bg-indigo-800/20 p-4 rounded-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-lg border border-indigo-800">
-                                    <div class="flex-1">
-                                        <div class="relative">
-                                            <div class="text-sm text-indigo-100 mb-2">
-                                                <div class="flex items-center justify-between">
-                                                    <div class="flex flex-col">
-                                                        <div class="flex items-center space-x-2">
-                                                            <x-tooltip :text="__('Operating System')" class="group-hover:opacity-100">
-                                                                <span class="font-medium bg-gradient-to-r from-indigo-200 to-indigo-100 bg-clip-text text-transparent">
-                                                                    <img src="{{ asset('/vendor/analytics/icons/os/'.formatOperatingSystem($operatingSystem->value)) }}.svg" class="w-4 h-4 inline mr-1 text-indigo-200">
-                                                                    {{ $operatingSystem->value ? $operatingSystem->value : __('Unknown') }}
-                                                                </span>
-                                                            </x-tooltip>
-                                                        </div>
-                                                    </div>
-                                                    <div class="flex items-center space-x-2">
-                                                        <x-tooltip :text="__('Total pageviews from this operating system')" class="group-hover:opacity-100">
-                                                            <span class="text-2xl font-bold text-indigo-100 group-hover:text-indigo-50 transition-colors">
-                                                                {{ number_format($operatingSystem->count, 0, __('.'), __(',')) }}
-                                                            </span>
-                                                        </x-tooltip>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="flex flex-col space-y-1">
-                                                <div class="overflow-hidden h-2 text-xs flex rounded-lg bg-indigo-700/30">
-                                                    <div style="width: {{ ($operatingSystem->count / $aggregates['total_count']) * 100 }}%"
-                                                        class="shadow-lg bg-gradient-to-r from-indigo-400 to-indigo-600 transition-all duration-300 hover:from-indigo-300 hover:to-indigo-500">
-                                                    </div>
-                                                </div>
-                                                <div class="flex justify-between text-xs text-indigo-300">
-                                                    <div class="flex space-x-4">
-                                                        <x-tooltip :text="__('First seen')" class="group-hover:opacity-100">
-                                                            <span class="hover:text-indigo-200 transition-colors">
-                                                                <x-icon name="heroicon-o-clock" class="w-3 h-3 inline mr-1 text-indigo-300" />
-                                                                {{ $operatingSystem->created_at->diffForHumans() }}
-                                                            </span>
-                                                        </x-tooltip>
-                                                        <x-tooltip :text="__('Last seen')" class="group-hover:opacity-100">
-                                                            <span class="hover:text-indigo-200 transition-colors">
-                                                                <x-icon name="heroicon-o-arrow-path" class="w-3 h-3 inline mr-1 text-indigo-300" />
-                                                                {{ $operatingSystem->updated_at->diffForHumans() }}
-                                                            </span>
-                                                        </x-tooltip>
-                                                    </div>
-                                                    <div class="flex space-x-4">
-                                                        <x-tooltip :text="__('Percentage of total pageviews')" class="group-hover:opacity-100">
-                                                            <span class="hover:text-indigo-200 transition-colors">
-                                                                <x-icon name="heroicon-o-chart-pie" class="w-3 h-3 inline mr-1 text-indigo-300" />
-                                                                {{ number_format(($operatingSystem->count / $aggregates['total_count']) * 100, 1) }}% {{ __('of total') }}
-                                                            </span>
-                                                        </x-tooltip>
-                                                        <x-tooltip :text="__('Average daily pageviews')" class="group-hover:opacity-100">
-                                                            <span class="hover:text-indigo-200 transition-colors">
-                                                                <x-icon name="heroicon-o-chart-bar" class="w-3 h-3 inline mr-1 text-indigo-300" />
-                                                                {{ round($operatingSystem->count / max(1, (strtotime($operatingSystem->updated_at) - strtotime($operatingSystem->created_at)) / 86400), 1) }} {{ __('views/day') }}
-                                                            </span>
-                                                        </x-tooltip>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+        <x-loading />
+        @if($operatingSystems->isNotEmpty())
+            <div class="space-y-6">
+                <div class="relative bg-white/90 dark:bg-slate-800/90 rounded-2xl shadow-lg border border-slate-200/60 dark:border-slate-700/60 p-6 overflow-hidden" x-data="{ isOpen: true }">
+                    <!-- Overview Stats -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <!-- Total OS -->
+                        <div class="bg-slate-50/50 dark:bg-slate-700/20 rounded-xl p-6">
+                            <div class="flex items-center gap-4">
+                                <div class="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
+                                    <x-icon name="heroicon-o-computer-desktop" class="w-6 h-6 text-emerald-500" />
                                 </div>
-                            @endforeach
-                        </div>
-                    </x-analytics::view>
-
-                    <x-analytics::view view="compact" color="indigo" class="overflow-hidden rounded-xl border border-indigo-800 backdrop-blur-xl">
-                        <table class="min-w-full divide-y divide-indigo-800">
-                            <thead class="bg-indigo-900">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-indigo-300 uppercase tracking-wider">Operating System</th>
-                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-indigo-300 uppercase tracking-wider">Pageviews</th>
-                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-indigo-300 uppercase tracking-wider">Percentage</th>
-                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-indigo-300 uppercase tracking-wider">Daily Avg</th>
-                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-indigo-300 uppercase tracking-wider">Graph</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-indigo-950 divide-y divide-indigo-800">
-                                @foreach($data as $operatingSystem)
-                                    <tr class="group hover:bg-indigo-900/50 transition-colors">
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center space-x-3">
-                                                <div class="bg-gradient-to-br from-indigo-700 to-indigo-900 p-2 rounded-full transform group-hover:rotate-12 transition-transform duration-300">
-                                                    <img src="{{ asset('/vendor/analytics/icons/os/'.formatOperatingSystem($operatingSystem->value)) }}.svg" class="w-5 h-5 text-indigo-200">
-                                                </div>
-                                                <div class="text-sm font-medium text-indigo-100 group-hover:text-indigo-50 transition-colors">
-                                                    {{ $operatingSystem->value ? $operatingSystem->value : __('Unknown') }}
-                                                </div>
-                                            </div>
-                                            <div class="text-xs text-indigo-400/70 mt-1 group-hover:text-indigo-300/70 transition-colors">
-                                                {{ __('First seen') }} {{ $operatingSystem->created_at->diffForHumans() }}
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right">
-                                            <div class="text-sm text-indigo-100 group-hover:text-indigo-50 transition-colors font-medium">
-                                                {{ number_format($operatingSystem->count, 0, __('.'), __(',')) }}
-                                            </div>
-                                            <div class="text-xs text-indigo-400/70 group-hover:text-indigo-300/70 transition-colors">
-                                                {{ __('pageviews') }}
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right">
-                                            <div class="text-sm text-indigo-100 group-hover:text-indigo-50 transition-colors font-medium">
-                                                {{ number_format(($operatingSystem->count / $aggregates['total_count']) * 100, 1) }}%
-                                            </div>
-                                            <div class="text-xs text-indigo-400/70 group-hover:text-indigo-300/70 transition-colors">
-                                                <x-icon name="heroicon-o-chart-pie" class="w-3 h-3 inline mr-1 text-indigo-300" />
-                                                {{ __('of total') }}
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right">
-                                            <div class="text-sm text-indigo-100 group-hover:text-indigo-50 transition-colors font-medium">
-                                                {{ round($operatingSystem->count / max(1, (strtotime($operatingSystem->updated_at) - strtotime($operatingSystem->created_at)) / 86400), 1) }}
-                                            </div>
-                                            <div class="text-xs text-indigo-400/70 group-hover:text-indigo-300/70 transition-colors">
-                                                {{ __('views/day') }}
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="w-32 h-2 text-xs flex rounded-full bg-indigo-700/30 ml-auto group-hover:bg-indigo-600/30 transition-colors">
-                                                <div style="width: {{ ($operatingSystem->count / $aggregates['total_count']) * 100 }}%"
-                                                    class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r from-indigo-400 to-indigo-600 group-hover:from-indigo-500 group-hover:to-indigo-700 transition-colors animate-pulse">
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </x-analytics::view>
-
-                    <x-analytics::view view="cards" color="indigo" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        @foreach($data as $operatingSystem)
-                            <div class="bg-gradient-to-br from-indigo-900 to-indigo-950 rounded-lg shadow p-4 flex flex-col justify-between group hover:from-indigo-800 hover:to-indigo-900 transition-all duration-300 hover:scale-105 backdrop-blur-xl">
                                 <div>
-                                    <div class="flex items-center justify-between mb-3">
-                                        <div class="p-2 bg-indigo-800/50 rounded-lg group-hover:bg-indigo-700/50 transition-colors transform group-hover:rotate-12 duration-300">
-                                            <img src="{{ asset('/vendor/analytics/icons/os/'.formatOperatingSystem($operatingSystem->value)) }}.svg" class="w-5 h-5 text-indigo-200">
-                                        </div>
-                                        <div class="text-xs text-indigo-400/70 group-hover:text-indigo-300/70 transition-colors">
-                                            {{ $operatingSystem->updated_at->diffForHumans() }}
-                                        </div>
+                                    <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('Most Common OS') }}</p>
+                                    <p class="text-xl font-semibold text-emerald-600 dark:text-emerald-400">
+                                        {{ $aggregates['most_common_category'] }}
+                                        <span class="text-sm font-normal">({{ number_format($aggregates['most_common_percentage'] * 100, 1) }}%)</span>
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex justify-between text-sm items-center mt-4">
+                                <span class="text-slate-500 flex items-center gap-2">
+                                    <x-icon name="heroicon-o-users" class="w-4 h-4 text-blue-500" />
+                                    {{ __('Total OS Types') }}:
+                                </span>
+                                <span class="font-medium text-blue-600 dark:text-blue-400">{{ number_format($aggregates['total_categories']) }}</span>
+                            </div>
+                            <div class="flex justify-between text-sm items-center mt-2">
+                                <span class="text-slate-500 flex items-center gap-2">
+                                    <x-icon name="heroicon-o-arrow-path" class="w-4 h-4 text-purple-500" />
+                                    {{ __('Diversity Index') }}:
+                                </span>
+                                <span class="font-medium text-purple-600 dark:text-purple-400">{{ number_format($aggregates['category_diversity_index'], 2) }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Engagement Metrics -->
+                        <div class="bg-slate-50/50 dark:bg-slate-700/20 rounded-xl p-6">
+                            <h3 class="font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-4">
+                                <x-icon name="heroicon-o-chart-bar" class="w-5 h-5 text-indigo-500" />
+                                {{ __('Visit Statistics') }}
+                            </h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between text-sm items-center">
+                                    <span class="text-slate-500 flex items-center gap-2">
+                                        <x-icon name="heroicon-o-arrow-trending-up" class="w-4 h-4 text-sky-500" />
+                                        {{ __('Avg Visits/OS') }}:
+                                    </span>
+                                    <span class="font-medium text-sky-600 dark:text-sky-400">{{ number_format($aggregates['average_visits_per_category'], 1) }}</span>
+                                </div>
+                                <div class="flex justify-between text-sm items-center">
+                                    <span class="text-slate-500 flex items-center gap-2">
+                                        <x-icon name="heroicon-o-arrow-uturn-left" class="w-4 h-4 text-teal-500" />
+                                        {{ __('Peak Activity') }}:
+                                    </span>
+                                    <span class="font-medium text-teal-600 dark:text-teal-400">{{ number_format($aggregates['peak_activity_percentage'], 1) }}%</span>
+                                </div>
+                                <div class="flex justify-between text-sm items-center">
+                                    <span class="text-slate-500 flex items-center gap-2">
+                                        <x-icon name="heroicon-o-star" class="w-4 h-4 text-amber-500" />
+                                        {{ __('Total Visits') }}:
+                                    </span>
+                                    <span class="font-medium text-amber-600 dark:text-amber-400">{{ number_format($aggregates['total_visits']) }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Visit Patterns -->
+                        <div class="bg-slate-50/50 dark:bg-slate-700/20 rounded-xl p-6">
+                            <h3 class="font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-4">
+                                <x-icon name="heroicon-o-chart-pie" class="w-5 h-5 text-rose-500" />
+                                {{ __('Visit Patterns') }}
+                            </h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between text-sm items-center">
+                                    <span class="text-slate-500 flex items-center gap-2">
+                                        <x-icon name="heroicon-o-arrow-trending-up" class="w-4 h-4 text-red-500" />
+                                        {{ __('Highest Visits/User') }}:
+                                    </span>
+                                    <span class="font-medium text-red-600 dark:text-red-400">{{ number_format($aggregates['highest_visits_per_visitor'], 1) }}</span>
+                                </div>
+                                <div class="flex justify-between text-sm items-center">
+                                    <span class="text-slate-500 flex items-center gap-2">
+                                        <x-icon name="heroicon-o-user-group" class="w-4 h-4 text-orange-500" />
+                                        {{ __('Multi-Visit OS') }}:
+                                    </span>
+                                    <span class="font-medium text-orange-600 dark:text-orange-400">{{ number_format($aggregates['categories_with_multiple_visits']) }}</span>
+                                </div>
+                                <div class="flex justify-between text-sm items-center">
+                                    <span class="text-slate-500 flex items-center gap-2">
+                                        <x-icon name="heroicon-o-clock" class="w-4 h-4 text-pink-500" />
+                                        {{ __('Median Visits') }}:
+                                    </span>
+                                    <span class="font-medium text-pink-600 dark:text-pink-400">{{ number_format($aggregates['median_visits_per_visitor'], 1) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Operating Systems List -->
+                    <div class="grid grid-cols-1 gap-6">
+                        @foreach($operatingSystems as $os)
+                            <div class="relative bg-slate-50/50 dark:bg-slate-700/20 rounded-xl p-6" x-data="{ showDetails: false }">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div class="flex items-center gap-3">
+                                        <img src="{{ asset('vendor/analytics/icons/os/'.formatOperatingSystem($os['value']).'.svg') }}" class="w-6 h-6 text-slate-400" />
+                                        <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ $os['value'] }}</span>
                                     </div>
-                                    <div class="text-sm font-medium text-indigo-200 mb-2 group-hover:text-indigo-100 transition-colors">
-                                        {{ $operatingSystem->value ? $operatingSystem->value : __('Unknown') }}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-800/30 dark:text-emerald-200">
+                                        {{ number_format($os['unique_visitors']) }} {{ __('Users') }}
+                                    </span>
+                                </div>
+
+                                <!-- Basic Stats -->
+                                <div class="grid grid-cols-2 gap-4 text-sm mb-4">
+                                    <div>
+                                        <p class="text-slate-500 dark:text-slate-400">{{ __('First Seen') }}</p>
+                                        <p class="font-medium text-slate-700 dark:text-slate-300">{{ Carbon\Carbon::parse($os['first_seen'])->format('M j, Y') }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-slate-500 dark:text-slate-400">{{ __('Last Seen') }}</p>
+                                        <p class="font-medium text-slate-700 dark:text-slate-300">{{ Carbon\Carbon::parse($os['last_seen'])->format('M j, Y') }}</p>
                                     </div>
                                 </div>
-                                <div class="mt-4">
-                                    <div class="text-2xl font-bold text-indigo-100 group-hover:text-indigo-50 transition-colors">{{ number_format($operatingSystem->count) }}</div>
-                                    <div class="text-xs text-indigo-300 group-hover:text-indigo-200 transition-colors">{{ __('pageviews') }}</div>
-                                    <div class="text-xs text-indigo-400/70 group-hover:text-indigo-300/70 transition-colors">
-                                        <x-icon name="heroicon-o-chart-pie" class="w-3 h-3 inline mr-1 text-indigo-300" />
-                                        {{ number_format(($operatingSystem->count / $aggregates['total_count']) * 100, 1) }}% {{ __('of total') }}
-                                    </div>
-                                    <div class="mt-3 h-1 bg-indigo-700/30 rounded-full overflow-hidden group-hover:bg-indigo-600/30 transition-colors">
-                                        <div class="h-full bg-gradient-to-r from-indigo-400 to-indigo-600 group-hover:from-indigo-500 group-hover:to-indigo-700 transition-colors animate-pulse"
-                                            style="width: {{ ($operatingSystem->count / $aggregates['total_count']) * 100 }}%">
-                                        </div>
+
+                                <!-- Show More Button -->
+                                <button
+                                    @click="showDetails = !showDetails"
+                                    class="w-full py-2 px-4 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-700/50 rounded-lg transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <span x-text="showDetails ? '{{ __('Show Less') }}' : '{{ __('Show More') }}'"></span>
+                                    <x-icon
+                                        :name="'heroicon-o-chevron-down'"
+                                        class="w-4 h-4 transition-transform"
+                                        ::class="showDetails ? 'rotate-180' : ''"
+                                    />
+                                </button>
+
+                                <!-- Detailed Content -->
+                                <div x-show="showDetails" x-collapse class="mt-4 space-y-4">
+                                    <!-- Meta Data -->
+                                    <div class="grid grid-cols-2 gap-6">
+                                        @foreach(['platform', 'device-type', 'language', 'vendor'] as $key)
+                                            @if(!empty($os['meta_data'][$key]))
+                                                <div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4">
+                                                    <p class="text-sm font-medium text-slate-700 dark:text-slate-300 capitalize mb-2">
+                                                        {{ str_replace('-', ' ', $key) }}
+                                                    </p>
+                                                    <div class="space-y-2">
+                                                        @foreach($os['meta_data'][$key]['distribution'] ?? [] as $value => $count)
+                                                            <div class="flex gap-4 items-center text-xs">
+                                                                <span class="text-slate-600 dark:text-slate-400">{{ $value }}</span>
+                                                                <div class="flex-1 relative h-2 bg-slate-100 dark:bg-slate-700 rounded">
+                                                                    <div class="absolute left-0 top-0 h-full bg-emerald-200 dark:bg-emerald-800 rounded"
+                                                                         style="width: {{ $os['meta_data'][$key]['distribution_percentages'][$value] ?? 0 }}%"></div>
+                                                                </div>
+                                                                <span class="text-slate-500 dark:text-slate-500">
+                                                                    {{ $count }} ({{ number_format($os['meta_data'][$key]['distribution_percentages'][$value] ?? 0, 1) }}%)
+                                                                </span>
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+                                            @endif
+                                        @endforeach
                                     </div>
                                 </div>
                             </div>
                         @endforeach
-                    </x-analytics::view>
+                    </div>
 
+                    <!-- Pagination -->
+                    <x-pagination :paginator="$operatingSystems" type="compact"/>
                 </div>
-                <div class="mt-6">
-                    <x-analytics::pagination :data="$data" />
-                </div>
-            @endif
-        </div>
+            </div>
+        @else
+            <div class="flex flex-col items-center justify-center py-20 bg-gradient-to-br from-slate-50 to-white dark:from-slate-900/90 dark:to-slate-800/90 rounded-2xl border border-dashed border-slate-200/60 dark:border-slate-700/60">
+                <x-icon name="heroicon-o-computer-desktop" class="w-12 h-12 text-slate-400 mb-4"/>
+                <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2">{{ __('No Operating System Data Available') }}</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('Start Monitoring To Collect Operating System Metrics') }}</p>
+            </div>
+        @endif
     </div>
-</x-website>
+</x-site>

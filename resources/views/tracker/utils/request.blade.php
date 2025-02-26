@@ -1,14 +1,43 @@
 queueRequest(requestData) {
     try {
+        // Add privacy mode check
+       //if (config.privacyMode) {
+       //    utils.debigInfo('Privacy mode enabled, skipping request');
+       //    return;
+       //}
+
+       // Add session event limit check
+       // if (this.eventsTracked >= config.maxEventsPerSession) {
+       //     utils.debugInfo('Max events per session reached, skipping request');
+       //     return;
+       // }
+//
+       // // Add sampling rate check
+       // if (Math.random() * 100 > config.samplingRate) {
+       //     utils.debugInfo('Request skipped due to sampling rate');
+       //     return;
+       // }
+//
+       // // Add excluded elements check
+       // const isExcluded = config.excludedElements.some(selector => {
+       //     return document.querySelector(selector) !== null;
+       // });
+//
+       // if (isExcluded) {
+       //     utils.debugInfo('Excluded element detected, skipping request');
+       //     return;
+       // }
+
         // Add timestamp to deduplication key with more precise timing
         const requestKey = JSON.stringify({
            type: requestData.type,
            data: requestData.data,
            name: requestData.name,
-           // Use more precise timestamp for deduplication (100ms window)
-           timestamp: Math.floor(Date.now() / 100) * 100
+           // Use more precise timestamp for deduplication (1s window)
+           timestamp: Math.floor(Date.now() / 1000) * 1000
        });
 
+       utils.debugInfo('Sending request with key:', requestKey);
         // Check for bot/crawler indicators
         const isBot = (
             // Check common bot user agents
@@ -52,10 +81,10 @@ queueRequest(requestData) {
             !window.KeyboardEvent
         );
 
-        if (isBot) {
-            utils.debugLog('Bot/suspicious client detected, skipping request:', requestData);
-            return;
-        }
+       //if (isBot) {
+       //    utils.debugInfo('Bot/suspicious client detected, skipping request:', requestData);
+       //    return;
+       //}
 
         // Initialize sent requests Set if not exists
         if (!this.sentRequests) {
@@ -64,7 +93,7 @@ queueRequest(requestData) {
 
         // Check if this exact request was already sent
        // if (this.sentRequests.has(requestKey)) {
-       //     utils.debugLog('Duplicate request detected, skipping:', requestData);
+       //     utils.debugInfo('Duplicate request detected, skipping:', requestData);
        //     return;
        // }
 
@@ -72,10 +101,10 @@ queueRequest(requestData) {
         this.sentRequests.add(requestKey);
 
         // Clean up old entries (optional)
-        if (this.sentRequests.size > 1000) {
-            const entries = Array.from(this.sentRequests);
-            entries.slice(0, 500).forEach(entry => this.sentRequests.delete(entry));
-        }
+       // if (this.sentRequests.size > 1000) {
+       //     const entries = Array.from(this.sentRequests);
+       //     entries.slice(0, 500).forEach(entry => this.sentRequests.delete(entry));
+       // }
 
         const timestamp = Math.floor(Date.now() / 1000);
 
@@ -86,17 +115,18 @@ queueRequest(requestData) {
             timestamp: timestamp,
         };
 
+
         // Send request immediately
         if (requestData.sendImmediately) {
             this.sendRequest([request]).catch(error => {
-                utils.debugLog('Immediate request failed, queueing instead:', error.message);
+                utils.debugError('Immediate request failed, queueing instead:', error.message);
                 this.requestQueue.push(request);
             });
         } else {
             this.requestQueue.push(request);
         }
     } catch (error) {
-        utils.debugLog('Request queueing failed:', error.message);
+        utils.debugError('Request queueing failed:', error.message);
     }
 }
 
@@ -108,7 +138,7 @@ startBatchTimer() {
 
         // Add initial delay for first batch
         setTimeout(() => {
-            utils.debugLog('Starting batch timer');
+            utils.debugInfo('Starting batch timer');
             this.processBatchedRequests();
             this.batchTimer = setInterval(() => {
                 this.processBatchedRequests();
@@ -117,14 +147,14 @@ startBatchTimer() {
 
         this.updateCountdownTimer(internalConfig.batchInterval);
     } catch (error) {
-        utils.debugLog('Failed to start batch timer:', error.message);
+        utils.debugError('Failed to start batch timer:', error.message);
     }
 }
 
 updateCountdownTimer(remainingTime) {
     try {
         if (typeof remainingTime !== 'number' || remainingTime < 0) {
-            utils.debugLog('Invalid remaining time value');
+            utils.debugError('Invalid remaining time value');
             return;
         }
 
@@ -137,17 +167,17 @@ updateCountdownTimer(remainingTime) {
             if (remainingTime <= 0) {
                 clearInterval(this.countdownTimer);
             } else {
-                utils.debugLog(`Time until next batch send: ${remainingTime / 1000} seconds`);
+                utils.debugInfo(`Time until next batch send: ${remainingTime / 1000} seconds`);
             }
         }, 1000);
     } catch (error) {
-        utils.debugLog('Countdown timer error:', error.message);
+        utils.debugError('Countdown timer error:', error.message);
     }
 }
 
 processBatchedRequests(isUnloading = false) {
     try {
-        utils.debugLog('Processing batched requests', {
+        utils.debugInfo('Processing batched requests', {
             queue: this.requestQueue,
             isProcessing: this.isProcessingQueue,
             isUnloading
@@ -157,20 +187,20 @@ processBatchedRequests(isUnloading = false) {
         if (this.isProcessingQueue &&
             this.processingQueueStartTime &&
             (Date.now() - this.processingQueueStartTime > 30000)) {
-            utils.debugLog('Processing queue timeout - resetting state');
+            utils.debugInfo('Processing queue timeout - resetting state');
             this.isProcessingQueue = false;
             this.processingQueueStartTime = null;
         }
 
-        if (this.isProcessingQueue) {
-            utils.debugLog('Queue is already being processed, skipping');
-            return;
-        }
+       // if (this.isProcessingQueue) {
+       //     utils.debugInfo('Queue is already being processed, skipping');
+       //     return;
+       // }
 
-        if (!this.requestQueue.length) {
-            utils.debugLog('Request queue is empty, skipping');
-            return;
-        }
+       // if (!this.requestQueue.length) {
+       //     utils.debugInfo('Request queue is empty, skipping');
+       //     return;
+       // }
 
         this.isProcessingQueue = true;
         this.processingQueueStartTime = Date.now();
@@ -181,11 +211,11 @@ processBatchedRequests(isUnloading = false) {
 
         if (!batch.length) {
             this.resetProcessingState();
-            utils.debugLog('Batch is empty after queue splice');
+            utils.debugInfo('Batch is empty after queue splice');
             return;
         }
 
-        utils.debugLog('Sending batch of', batch.length, 'requests');
+        utils.debugInfo('Sending batch of', batch.length, 'requests');
 
         const isActuallyUnloading = isUnloading && (
             document.visibilityState === 'hidden' ||
@@ -194,21 +224,21 @@ processBatchedRequests(isUnloading = false) {
         );
 
         if (isActuallyUnloading) {
-            utils.debugLog('Page unloading - storing batch offline');
+            utils.debugInfo('Page unloading - storing batch offline');
             this.storeOfflineRequest(config.host, batch, 'POST');
             this.resetProcessingState();
             return;
         }
 
         setTimeout(async () => {
-            utils.debugLog('Attempting to send batch request', {
+            utils.debugInfo('Attempting to send batch request', {
                 batchSize: batch.length,
                 firstEvent: batch[0],
                 lastEvent: batch[batch.length - 1]
             });
 
             // Log the state before sending
-            utils.debugLog('Current state:', {
+            utils.debugInfo('Current state:', {
                 isProcessingQueue: this.isProcessingQueue,
                 processingQueueStartTime: this.processingQueueStartTime,
                 requestQueueLength: this.requestQueue.length,
@@ -217,7 +247,7 @@ processBatchedRequests(isUnloading = false) {
 
             try {
                 const response = await this.sendRequest(batch);
-                utils.debugLog('Batch sent successfully', {
+                utils.debugInfo('Batch sent successfully', {
                     response: response,
                     timestamp: new Date().toISOString()
                 });
@@ -226,20 +256,27 @@ processBatchedRequests(isUnloading = false) {
                 }
                 this.resetProcessingState();
             } catch (error) {
-                // Detailed error logging
-                utils.debugLog('Batch send error details:', {
-                    error: error,
-                    errorType: error?.constructor?.name,
-                    errorMessage: error?.message,
-                    errorStack: error?.stack,
+                // Enhanced error logging
+                utils.debugError('Full error object details:', {
+                    name: error?.name,
+                    message: error?.message,
+                    stack: error?.stack,
+                    constructor: error?.constructor?.name,
+                    prototype: Object.getPrototypeOf(error)?.constructor?.name,
+                    isTrusted: error?.isTrusted, // For DOMException
+                    code: error?.code, // For system errors
+                    status: error?.status, // For HTTP errors
+                    response: error?.response, // For HTTP response errors
+                    config: error?.config, // For Axios errors
+                    request: error?.request, // For HTTP request errors
+                    cause: error?.cause, // For chained errors
                     timestamp: new Date().toISOString()
                 });
 
-                console.error('Full error object:', error);
                 this.sendRequestFailures++;
 
                 // Log the batch that failed
-                utils.debugLog('Failed batch details:', {
+                utils.debugInfo('Failed batch details:', {
                     batchSize: batch.length,
                     batchContents: batch
                 });
@@ -247,7 +284,7 @@ processBatchedRequests(isUnloading = false) {
                 // Add retry count and requeue with exponential backoff
                 batch.forEach(request => {
                     request.retryCount = (request.retryCount || 0) + 1;
-                    utils.debugLog('Processing failed request:', {
+                    utils.debugInfo('Processing failed request:', {
                         request: request,
                         currentRetryCount: request.retryCount
                     });
@@ -255,16 +292,16 @@ processBatchedRequests(isUnloading = false) {
                     if (request.retryCount <= 3) {
                         const backoffDelay = Math.pow(2, request.retryCount - 1) * 1000;
                         setTimeout(() => {
-                            utils.debugLog('Retrying request:', {
+                            utils.debugInfo('Retrying request:', {
                                 request: request,
                                 retryCount: request.retryCount,
                                 backoffDelay: backoffDelay
                             });
                             this.requestQueue.unshift(request);
                         }, backoffDelay);
-                        utils.debugLog(`Request scheduled for retry ${request.retryCount} in ${backoffDelay}ms`);
+                        utils.debugInfo(`Request scheduled for retry ${request.retryCount} in ${backoffDelay}ms`);
                     } else {
-                        utils.debugLog('Request failed after maximum retries:', {
+                        utils.debugInfo('Request failed after maximum retries:', {
                             request: request,
                             finalRetryCount: request.retryCount
                         });
@@ -276,44 +313,47 @@ processBatchedRequests(isUnloading = false) {
             }
         }, 0);
     } catch (error) {
-        utils.debugLog('Failed to process batch:', error.message);
+        utils.debugError('Failed to process batch:', error.message);
         this.resetProcessingState();
     }
 }
 
 async sendRequest(events, method = 'POST') {
     try {
-        if (!config.siteId) {
-            utils.debugLog('Missing required site ID');
+        if (!config.id) {
+            utils.debugError('Missing required site ID');
             return Promise.reject();
         }
 
-        const page = utils.getPageUrl();
-        const session_id = utils.getSessionId();
-        const title = utils.getPageTitle();
-        const path = utils.getPagePath();
-        const charset = utils.getCharacterSet();
-        const request_id = utils.getUniqueId();
-        const site_id = config.siteId;
+        // Add session timeout check
+        const currentTime = Date.now();
+        if (currentTime - this.sessionStartTime > config.sessionTimeout) {
+            utils.debugError('Session timeout reached, starting new session');
+            this.sessionStartTime = currentTime;
+            this.eventsTracked = 0;
+            this.sentRequests.clear();
+        }
+
         const payload = {
-            site_id: site_id,
-            page: page,
-            session_id: session_id,
-            title: title,
-            path: path,
-            charset: charset,
-            request_id: request_id,
+            site_id: config.id,
+            page: utils.getPageUrl(),
+            session_id: utils.getSessionId(),
+            path: utils.getPagePath(),
+            request_id: utils.getUniqueId(),
             events: events
         };
 
+        utils.debugInfo('Sending request:', payload);
         // Try fetch first
         try {
             const response = await this.sendWithFetch(payload, method);
+            utils.debugInfo('Response:', response);
             // Clear sent events after successful send
+            utils.debugInfo('Clearing sent events after successful send');
             this.clearSentEvents(events);
             return response;
         } catch (fetchError) {
-            utils.debugLog('Fetch failed, falling back to XMLHttpRequest:', fetchError);
+            utils.debugError('Fetch failed, falling back to XMLHttpRequest:', fetchError);
             const response = await this.sendWithXHR(payload, method);
             // Clear sent events after successful send
             this.clearSentEvents(events);
@@ -321,7 +361,7 @@ async sendRequest(events, method = 'POST') {
         }
 
     } catch (error) {
-        console.error('Request failed:', error);
+        utils.debugError('Request failed:', error);
         this.sendRequestFailures++;
         throw error;
     }
@@ -329,6 +369,7 @@ async sendRequest(events, method = 'POST') {
 
 // Add these new helper methods
 async sendWithFetch(payload, method) {
+    console.log(payload);
     const response = await fetch(`${config.host}/api/v1/event`, {
         method,
         headers: {
@@ -336,17 +377,32 @@ async sendWithFetch(payload, method) {
             'Content-Type': 'application/json',
             'X-CSRF-Token': this.csrfToken || ''
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+            event: payload
+        }),
         keepalive: true,
         credentials: 'include'
     });
 
+    utils.debugInfo('Send with fetch response:', response);
     if (!response.ok) {
+        utils.debugError('Send with fetch error:', response);
         throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    this.updateSuccessMetrics(payload.events.length);
-    return await response.json();
+    // Check if response has content before trying to parse JSON
+    const text = await response.text();
+    if (!text) {
+        return { status: 'success' };
+    }
+
+    try {
+        return JSON.parse(text);
+    } catch (e) {
+        utils.debugError('JSON parse error:', e);
+        // Return a default success response if parsing fails
+        return { status: 'success' };
+    }
 }
 
 sendWithXHR(payload, method) {
@@ -379,27 +435,27 @@ updateSuccessMetrics(eventsCount) {
     this.sendRequestFailures = 0;
     this.requestsSent++;
     this.eventsTracked += eventsCount;
-    utils.debugLog('Request successful');
+    utils.debugInfo('Request successful');
 }
 
 storeOfflineRequest(url, events, method) {
     try {
         // Validate inputs
         if (!url) {
-            utils.debugLog('Missing required URL parameter');
+            utils.debugError('Missing required URL parameter');
             return;
         }
         // if (!events) {
-        //     utils.debugLog('Missing required events parameter');
+        //     utils.debugError('Missing required events parameter');
         //     return;
         // }
         if (!method) {
-            utils.debugLog('Missing required method parameter');
+            utils.debugError('Missing required method parameter');
             return;
         }
 
         if (!Array.isArray(events)) {
-            utils.debugLog('Events must be an array for offline storage');
+            utils.debugError('Events must be an array for offline storage');
             return;
         }
 
@@ -410,13 +466,13 @@ storeOfflineRequest(url, events, method) {
         try {
             localStorage.setItem('ts_monitor_offline_requests', JSON.stringify(offlineRequests));
         } catch (storageError) {
-            utils.debugLog(`Failed to store offline request: ${storageError.message}`);
+            utils.debugError(`Failed to store offline request: ${storageError.message}`);
             return;
         }
 
-        utils.debugLog('Stored offline request:', request);
+        utils.debugInfo('Stored offline request:', request);
     } catch (error) {
-        utils.debugLog('Failed to store offline request:', error.message);
+        utils.debugError('Failed to store offline request:', error.message);
     }
 }
 
@@ -426,12 +482,12 @@ async sendOfflineRequests() {
         try {
             offlineRequests = JSON.parse(localStorage.getItem('ts_monitor_offline_requests') || '[]');
         } catch (parseError) {
-            utils.debugLog(`Failed to parse offline requests: ${parseError.message}`);
+            utils.debugError(`Failed to parse offline requests: ${parseError.message}`);
             return;
         }
 
         if (!offlineRequests.length) {
-            utils.debugLog('No offline requests to process');
+            utils.debugInfo('No offline requests to process');
             return;
         }
 
@@ -441,27 +497,27 @@ async sendOfflineRequests() {
         });
 
         if (validRequests.length !== offlineRequests.length) {
-            utils.debugLog(`${offlineRequests.length - validRequests.length} invalid requests will be skipped`);
+            utils.debugError(`${offlineRequests.length - validRequests.length} invalid requests will be skipped`);
         }
 
-        utils.debugLog('Processing offline requests:', validRequests);
+        utils.debugInfo('Processing offline requests:', validRequests);
 
         try {
             await Promise.all(
                 validRequests.map(request => this.sendRequest(request.events, request.method))
             );
             localStorage.removeItem('ts_monitor_offline_requests');
-            utils.debugLog('Offline requests processed successfully');
+            utils.debugInfo('Offline requests processed successfully');
         } catch (error) {
             if (error && error.message) {
-                utils.debugLog('Failed to process offline requests:', error.message);
+                utils.debugError('Failed to process offline requests:', error.message);
             } else {
-                utils.debugLog('Failed to process offline requests:', error);
+                utils.debugError('Failed to process offline requests:', error);
             }
             throw error;
         }
     } catch (error) {
-        utils.debugLog('Failed to process offline requests:', error.message);
+        utils.debugError('Failed to process offline requests:', error.message);
         throw error;
     }
 }
@@ -471,7 +527,7 @@ resetProcessingState() {
         this.isProcessingQueue = false;
         this.processingQueueStartTime = null;
     } catch (error) {
-        utils.debugLog('Failed to reset processing state:', error.message);
+        utils.debugError('Failed to reset processing state:', error.message);
     }
 }
 
@@ -497,8 +553,8 @@ clearSentEvents(events) {
             });
             this.sentRequests.delete(eventKey);
         });
-        utils.debugLog('Cleared sent events from tracking');
+        utils.debugInfo('Cleared sent events from tracking');
     } catch (error) {
-        utils.debugLog('Failed to clear sent events:', error.message);
+        utils.debugError('Failed to clear sent events:', error.message);
     }
 }

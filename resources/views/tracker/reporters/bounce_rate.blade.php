@@ -35,7 +35,7 @@ trackBounceRate() {
                 }
             };
             this.queueRequest(bounceData);
-            utils.debugLog('Bounce detected and queued', bounceData.value);
+            utils.debugInfo('Bounce detected and queued', bounceData.value);
         }
     }, bounceThreshold);
 
@@ -61,7 +61,7 @@ trackBounceRate() {
                 }
             };
             this.queueRequest(bounceData);
-            utils.debugLog('Non-bounce detected and queued', bounceData.value);
+            utils.debugInfo('Non-bounce detected and queued', bounceData.value);
         }
     });
 
@@ -75,6 +75,6 @@ trackBounceRate() {
             }
         });
         localStorage.removeItem('ts_monitor_offline_requests');
-        utils.debugLog('Stored bounce data sent and cleared');
+        utils.debugInfo('Stored bounce data sent and cleared');
     }
 }

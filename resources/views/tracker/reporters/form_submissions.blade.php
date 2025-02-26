@@ -72,7 +72,7 @@ trackFormSubmissions() {
         };
 
         this.queueRequest(formData);
-        utils.debugLog('Form submission tracked:', formData);
+        utils.debugInfo('Form submission tracked:', formData);
 
         // Track form submission timing
         const submissionTiming = {

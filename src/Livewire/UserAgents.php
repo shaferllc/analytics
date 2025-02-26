@@ -2,13 +2,17 @@
 
 namespace Shaferllc\Analytics\Livewire;
 
+use App\Models\Site;
 use Livewire\Component;
+use Illuminate\Support\Str;
 use Livewire\WithPagination;
+use Illuminate\Support\Carbon;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Locked;
-use App\Models\Site;
+use Livewire\Attributes\Computed;
 use Shaferllc\Analytics\Traits\ComponentTrait;
 use Shaferllc\Analytics\Traits\DateRangeTrait;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 #[Title('User Agents')]
 class UserAgents extends Component
@@ -17,182 +21,260 @@ class UserAgents extends Component
 
     #[Locked]
     public Site $site;
-    public ?string $name = null;
-    public ?string $value = null;
 
-    public function mount(Site $site, $value = null): void
-    {
-        $this->site = $site;
-        $this->value = $value;
-    }
+    public $page = 0;
 
     public function render()
     {
-        $data = $this->query(
-            category: 'technical',
-            type: 'user_agent',
-            from: $this->from,
-            value: str_replace('-', ' ', $this->value),
-            to: $this->to
+        $perPage = 14;
+        $browserData = $this->getBrowserData();
+
+        // Partition and paginate
+        [$bots, $regularUserAgents] = collect($browserData['data'])->partition(fn($ua) =>
+            Str::contains(strtolower($ua['user_agent']), array_keys(bots()), true)
         );
 
-        // Transform paginated data to extract browser details
-        $transformedData = $data['data']->through(function ($item) {
-            $userAgent = $item->value;
-
-            // Extract browser details using regex patterns
-            preg_match('/(Chrome|Safari|Firefox|Edge|MSIE|Opera|Trident|OPR|SamsungBrowser|UCBrowser|YaBrowser|Vivaldi|Brave|Instagram|Facebook|WhatsApp|Twitter|LinkedIn|Snapchat|TikTok)\/?((?:[0-9]+\.?)+)/', $userAgent, $browserMatches);
-            preg_match('/(Windows NT|Macintosh|Linux|Android|iPhone|iPad|iPod|CrOS|Xbox|PlayStation|Nintendo|BlackBerry|webOS|Windows Phone|Symbian|Ubuntu|Debian|Fedora|Red Hat|CentOS)\s?([0-9\._]+)?/', $userAgent, $osMatches);
-            preg_match('/(Mobile|Tablet|Desktop|TV|Console|Wearable|IoT)/', $userAgent, $deviceMatches);
-            preg_match('/(x86_64|x86|arm64|armv[0-9]+|aarch64|powerpc|sparc|mips|amd64|i[3-6]86|win32|win64|x64|ia32|ia64)/', $userAgent, $architectureMatches);
-            preg_match('/(KHTML|Gecko|Presto|Trident|WebKit|Blink|EdgeHTML)/', $userAgent, $engineMatches);
-            preg_match('/(Chrome|Firefox|Safari|Edge|Opera|IE|Instagram|Facebook|WhatsApp|Twitter|LinkedIn|Snapchat|TikTok)\/([\d\.]+)/', $userAgent, $versionMatches);
-            preg_match('/(1\d{3}x\d{3}|\d{3,4}x\d{3,4})/', $userAgent, $resolutionMatches);
-
-            // Extract iOS specific details
-            preg_match('/CPU.*OS\s+(\d+[._]\d+[._]?\d*)/', $userAgent, $iosVersionMatches);
-            preg_match('/iPhone(\d+,\d+)/', $userAgent, $iphoneModelMatches);
-
-            // Extract WebKit version
-            preg_match('/AppleWebKit\/(\d+\.\d+)/', $userAgent, $webkitVersionMatches);
-
-            // Extract scale factor
-            preg_match('/scale=(\d+\.\d+)/', $userAgent, $scaleMatches);
-
-            // Extract build number
-            preg_match('/Mobile\/(\w+)/', $userAgent, $buildMatches);
-
-            // Extract social media app details with more specifics
-            preg_match('/(Instagram|Facebook|WhatsApp|Twitter|LinkedIn|Snapchat|TikTok)\s+([\d\.]+\.?\d*\.?\d*\.?\d*)/', $userAgent, $appMatches);
-
-            $browser = $browserMatches[1] ?? 'Unknown';
-            $browserVersion = $browserMatches[2] ?? '';
-            $os = $osMatches[1] ?? 'Unknown';
-            $osVersion = $osMatches[2] ?? '';
-            $device = $deviceMatches[1] ?? 'Unknown';
-            $architecture = $architectureMatches[1] ?? 'Unknown';
-            $engine = $engineMatches[1] ?? 'Unknown';
-            $resolution = $resolutionMatches[1] ?? 'Unknown';
-            $app = $appMatches[1] ?? null;
-            $appVersion = $appMatches[2] ?? null;
-
-            // Additional extracted details
-            $iosVersion = str_replace('_', '.', $iosVersionMatches[1] ?? '');
-            $iphoneModel = $iphoneModelMatches[1] ?? null;
-            $webkitVersion = $webkitVersionMatches[1] ?? null;
-            $scaleFactor = $scaleMatches[1] ?? null;
-            $buildNumber = $buildMatches[1] ?? null;
-
-            // Handle special cases and normalize data
-            if ($browser === 'Trident' || $browser === 'MSIE') {
-                $browser = 'Internet Explorer';
-            } elseif ($browser === 'OPR') {
-                $browser = 'Opera';
-            } elseif (strpos($userAgent, 'Brave') !== false) {
-                $browser = 'Brave';
-            }
-
-            // If it's a social media app, set that as the browser
-            if ($app) {
-                $browser = $app;
-                $browserVersion = $appVersion;
-            }
-
-            if ($os === 'iPhone' || $os === 'iPad' || $os === 'iPod') {
-                $os = 'iOS';
-                $osVersion = $iosVersion;
-            } elseif (strpos($os, 'Windows NT') !== false) {
-                $windowsVersions = [
-                    '10.0' => 'Windows 10/11',
-                    '6.3' => 'Windows 8.1',
-                    '6.2' => 'Windows 8',
-                    '6.1' => 'Windows 7',
-                    '6.0' => 'Windows Vista',
-                    '5.2' => 'Windows XP x64',
-                    '5.1' => 'Windows XP',
-                ];
-                $os = $windowsVersions[$osVersion] ?? 'Windows';
-            }
-
-            // Enhanced device detection
-            if (preg_match('/(iPhone|Android.*Mobile|Mobile.*Firefox|Opera Mobi)/', $userAgent)) {
-                $device = 'Mobile';
-            } elseif (preg_match('/(iPad|Android(?!.*Mobile)|Tablet)/', $userAgent)) {
-                $device = 'Tablet';
-            } elseif (preg_match('/(TV|SmartTV|WebTV|HbbTV)/', $userAgent)) {
-                $device = 'TV';
-            } elseif (preg_match('/(Xbox|PlayStation|Nintendo|OUYA)/', $userAgent)) {
-                $device = 'Console';
-            } elseif (preg_match('/(Glass|Watch|Gear)/', $userAgent)) {
-                $device = 'Wearable';
-            } else {
-                $device = 'Desktop';
-            }
-
-            $item->parsed = [
-                'browser' => $browser,
-                'browser_version' => $browserVersion,
-                'operating_system' => $os,
-                'os_version' => $osVersion,
-                'device_type' => $device,
-                'architecture' => $architecture,
-                'engine' => $engine,
-                'screen_resolution' => $resolution,
-                'is_mobile' => $device === 'Mobile',
-                'is_tablet' => $device === 'Tablet',
-                'is_desktop' => $device === 'Desktop',
-                'is_tv' => $device === 'TV',
-                'is_console' => $device === 'Console',
-                'is_wearable' => $device === 'Wearable',
-                'is_social_app' => $app !== null,
-                'social_app' => $app,
-                'social_app_version' => $appVersion,
-                'is_bot' => (bool)preg_match('/(bot|crawler|spider|slurp|googlebot|bingbot|yahoo|baidu|yandex|duckduckbot)/i', $userAgent),
-                'is_secure' => strpos($userAgent, 'https') !== false,
-                'supports_javascript' => !preg_match('/(Lynx|Links|w3m|WebbIE)/i', $userAgent),
-                'supports_cookies' => !preg_match('/(CookieBlock|Cookie ?Killer)/i', $userAgent),
-                'language' => $this->extractLanguage($userAgent),
-                'raw' => $userAgent,
-                'webkit_version' => $webkitVersion,
-                'scale_factor' => $scaleFactor,
-                'build_number' => $buildNumber,
-                'device_model' => $iphoneModel
-            ];
-
-            return $item;
-        });
-
-        // Update the data array with transformed results
-        $data['data'] = $transformedData;
+        $sortedUserAgents = $regularUserAgents->sortByDesc('total_visits');
+        $offset = max(0, ($this->page - 1) * $perPage);
+        $items = $sortedUserAgents->slice($offset, $perPage);
 
         return view('analytics::livewire.user-agents', [
-            'data' => $data['data'],
-            'first' => $data['first'],
-            'last' => $data['last'],
-            'total' => $data['total'],
-            'aggregates' => $data['aggregates'],
-            'range' => $this->range,
+            'userAgents' => new LengthAwarePaginator(
+                $items,
+                $sortedUserAgents->count(),
+                $perPage,
+                $this->page
+            ),
+            'bots' => $bots,
+            'aggregates' => $browserData['aggregates']
         ]);
     }
 
-    /**
-     * Extract language from user agent string
-     *
-     * @param string $userAgent
-     * @return string|null
-     */
-    private function extractLanguage($userAgent)
+    #[Computed]
+    public function overallStats()
     {
-        // Match language codes like en-US, fr-FR, etc.
-        if (preg_match('/[a-z]{2}[-_][A-Z]{2}/', $userAgent, $matches)) {
-            return $matches[0];
-        }
-
-        // Match simple language codes like en, fr, etc.
-        if (preg_match('/;\s*([a-z]{2})\s*[;)]/', $userAgent, $matches)) {
-            return $matches[1];
-        }
-
-        return null;
+        return [
+            'basic' => [
+                'title' => null,
+                'icon' => 'heroicon-o-globe-alt',
+                'items' => [
+                    ['label' => __('Total User Agents'), 'key' => 'total_categories', 'icon' => 'heroicon-o-globe-alt', 'color' => 'emerald'],
+                    ['label' => __('Total Visitors'), 'key' => 'total_visitors', 'icon' => 'heroicon-o-users', 'color' => 'blue'],
+                    ['label' => __('Unique Visitors'), 'key' => 'unique_visitors', 'icon' => 'heroicon-o-user', 'color' => 'purple', 'tooltip' => __('The number of unique visitors to the site.')],
+                    ['label' => __('Total Browsers'), 'key' => 'total_browsers', 'icon' => 'heroicon-o-globe-alt', 'color' => 'sky', 'tooltip' => __('The total number of browsers used by visitors.')],
+                    ['label' => __('Device Types'), 'key' => 'total_device_types', 'icon' => 'heroicon-o-device-tablet', 'color' => 'fuchsia', 'tooltip' => __('The total number of device types used by visitors.')],
+                ]
+            ],
+            'visit_metrics' => [
+                'title' => __('Visit Metrics'),
+                'icon' => 'heroicon-o-chart-bar',
+                'items' => [
+                    ['label' => __('Total Visits'), 'key' => 'total_visits', 'icon' => 'heroicon-o-arrow-path', 'color' => 'red'],
+                    ['label' => __('Avg Visits/Category'), 'key' => 'average_visits_per_category', 'icon' => 'heroicon-o-calculator', 'color' => 'orange'],
+                    ['label' => __('Avg Visits/Visitor'), 'key' => 'average_visits_per_visitor', 'icon' => 'heroicon-o-user-group', 'color' => 'yellow'],
+                    ['label' => __('Languages'), 'key' => 'total_languages', 'icon' => 'heroicon-o-language', 'color' => 'lime'],
+                    ['label' => __('Timezones'), 'key' => 'total_timezones', 'icon' => 'heroicon-o-clock', 'color' => 'amber'],
+                ]
+            ],
+            'engagement' => [
+                'title' => __('Engagement'),
+                'icon' => 'heroicon-o-chart-pie',
+                'items' => [
+                    ['label' => __('Retention Rate'), 'key' => 'visitor_retention_rate', 'icon' => 'heroicon-o-heart', 'color' => 'pink'],
+                    ['label' => __('Engagement Score'), 'key' => 'average_engagement_score', 'icon' => 'heroicon-o-star', 'color' => 'violet'],
+                    ['label' => __('Peak Activity'), 'key' => 'peak_activity_percentage', 'icon' => 'heroicon-o-bolt', 'color' => 'cyan'],
+                    ['label' => __('Device Models'), 'key' => 'total_device_models', 'icon' => 'heroicon-o-device-phone-mobile', 'color' => 'indigo'],
+                    ['label' => __('Device Brands'), 'key' => 'total_device_brands', 'icon' => 'heroicon-o-tag', 'color' => 'rose'],
+                ]
+            ],
+            'advanced_metrics' => [
+                'title' => __('Advanced Metrics'),
+                'icon' => 'heroicon-o-beaker',
+                'items' => [
+                    ['label' => __('Diversity Index'), 'key' => 'category_diversity_index', 'icon' => 'heroicon-o-variable', 'color' => 'teal'],
+                    ['label' => __('Most Common'), 'key' => 'most_common_percentage', 'icon' => 'heroicon-o-document-text', 'color' => 'lime'],
+                    ['label' => __('Highest Visits/User'), 'key' => 'highest_visits_per_visitor', 'icon' => 'heroicon-o-arrow-trending-up', 'color' => 'emerald'],
+                    ['label' => __('Avg Pages/Visitor'), 'key' => 'average_pages_per_visitor', 'icon' => 'heroicon-o-document-chart-bar', 'color' => 'blue'],
+                    ['label' => __('Avg Visit Days'), 'key' => 'average_visit_days', 'icon' => 'heroicon-o-calendar-days', 'color' => 'purple'],
+                ]
+            ]
+        ];
     }
+
+    public function basicStats($agent, $aggregates)
+    {
+        return [
+            [
+                'icon' => 'heroicon-o-clock',
+                'label' => __('First Seen'),
+                'value' => Carbon::parse($agent['first_seen'])->format('M j, Y H:i'),
+                'tooltip' => __('The date and time the user agent was first seen on the site.')
+            ],
+            [
+                'icon' => 'heroicon-o-clock',
+                'label' => __('Last Seen'),
+                'value' => Carbon::parse($agent['last_seen'])->format('M j, Y H:i'),
+                'tooltip' => __('The date and time the user agent was last seen on the site.')
+            ],
+            [
+                'icon' => 'heroicon-o-calendar',
+                'label' => __('Visit Days'),
+                'value' => number_format($agent['visit_days']),
+                'tooltip' => __('The number of days the user agent has visited the site.')
+            ],
+            [
+                'icon' => 'heroicon-o-percent-badge',
+                'label' => __('Percentage'),
+                'value' => number_format(($agent['unique_visitors'] / $aggregates['total_visitors']) * 100, 1) . '%',
+                'tooltip' => __('The percentage of visitors that have visited the site.')
+            ]
+        ];
+    }
+
+    public function browserInfo($agent)
+    {
+        return [
+            [
+                'type' => 'grid',
+                'title' => __('Browser Information'),
+                'icon' => 'heroicon-o-globe-alt',
+                'color' => 'indigo-500',
+                'fields' => [
+                    [
+                        'label' => __('Browser'),
+                        'key' => 'browser.name',
+                        'class' => 'col-span-2',
+                        'transform' => fn($value) => $value->map(fn($count, $name) => "$name ($count)")->join(', '),
+                        'tooltip' => __('The browser used by the visitor. This includes the specific browser name and version detected during their visits. Browsers are identified through the user agent string sent by the visitor\'s device. <br><br>Examples: Chrome, Firefox, Safari, Edge. <br><br>Multiple entries indicate the visitor used different browsers across sessions.'),
+                        'iconString' => fn($value) => '<img src="'.asset('vendor/analytics/icons/browsers/'.formatBrowser($value).'.svg').'" alt="'.formatBrowser($value).'" class="w-4 h-4">',
+                    ],
+                    [
+                        'label' => __('Version'),
+                        'key' => 'browser.versions',
+                        'transform' => fn($value) => $value->map(fn($count, $version) => "$version ($count)")->join(', '),
+                        'tooltip' => __('<strong>Browser Version</strong><br>Shows the specific versions of the browser used by the visitor across their sessions. Multiple versions indicate the visitor accessed your site from different browser versions.<br><br><span class="text-sm text-slate-500">Example:<br>Chrome 120.0.0.0 (3)<br>Chrome 119.0.0.0 (1)</span>'),
+                        'iconString' => fn($value) => '<img src="'.asset('vendor/analytics/icons/browsers/'.formatBrowser($value).'.svg').'" alt="'.formatBrowser($value).'" class="w-4 h-4">',
+                    ],
+                    [
+                        'label' => __('OS'),
+                        'key' => 'browser.os',
+                        'transform' => fn($value) => $value->map(fn($count, $os) => "$os ($count)")->join(', '),
+                        'tooltip' => __('<strong>Operating System</strong><br>Indicates the operating system platform used by the visitor. This helps identify whether they\'re using Windows, macOS, Linux, iOS, Android, or other systems.<br><br><span class="text-sm text-slate-500">Example:<br>Windows (4)<br>macOS (2)</span>'),
+                        'iconString' => fn($value) => '<img src="'.asset('vendor/analytics/icons/os/'.formatOperatingSystem($value).'.svg').'" alt="'.formatOperatingSystem($value).'" class="w-4 h-4">',
+                    ],
+                    [
+                        'label' => __('OS Version'),
+                        'key' => 'browser.os_versions',
+                        'transform' => fn($value) => $value->map(fn($count, $osVersion) => "$osVersion ($count)")->join(', '),
+                        'tooltip' => __('<strong>OS Version</strong><br>Shows the specific versions of the operating system used by the visitor. This provides granular insight into the visitor\'s system environment.<br><br><span class="text-sm text-slate-500">Example:<br>Windows 10 (3)<br>Windows 11 (1)</span>'),
+                        'iconString' => fn($value) => '<img src="'.asset('vendor/analytics/icons/os/'.formatBrowser($value).'.svg').'" alt="'.formatBrowser($value).'" class="w-4 h-4">',
+                    ]
+                ]
+            ],
+            [
+                'type' => 'key-value',
+                'title' => __('Device Information'),
+                'icon' => 'heroicon-o-device-phone-mobile',
+                'color' => 'purple-500',
+                'fields' => [
+                    'browser.device.types' => [
+                        'label' => __('Device Types'),
+                        'transform' => fn($value) => collect($agent['browser']['device']['types'])
+                            ->map(fn($count, $type) => "$type ($count)")
+                            ->toArray(),
+                        'tooltip' => __('<strong>Device Types</strong><br>Shows the types of devices used by the visitor, such as mobile, desktop, or tablet. This helps identify the primary device category used to access your site.<br><br><span class="text-sm text-slate-500">Example:<br>Mobile (4)<br>Desktop (2)</span>'),
+                        'iconString' => fn($value) => '<img src="'.asset('vendor/analytics/icons/devices/'.formatDevice($value).'.svg').'" alt="'.formatDevice($value).'" class="w-4 h-4">',
+                    ],
+                    'browser.device.brands' => [
+                        'label' => __('Brands'),
+                        'transform' => fn($value) => collect($agent['browser']['device']['brands'])
+                            ->map(fn($count, $brand) => "$brand ($count)")
+                            ->toArray(),
+                        'tooltip' => __('<strong>Device Brands</strong><br>Indicates the manufacturer brands of the devices used by the visitor. This provides insight into the hardware ecosystem of your visitors.<br><br><span class="text-sm text-slate-500">Example:<br>Apple (3)<br>Samsung (1)</span>'),
+                        'iconString' => fn($value) => '<img src="'.asset('vendor/analytics/icons/devices/'.formatDevice($value).'.svg').'" alt="'.formatDevice($value).'" class="w-4 h-4">',
+                    ],
+                    'browser.device.models' => [
+                        'label' => __('Models'),
+                        'transform' => fn($value) => collect($agent['browser']['device']['models'])
+                            ->map(fn($count, $model) => "$model ($count)")
+                            ->toArray(),
+                        'tooltip' => __('<strong>Device Models</strong><br>Shows the specific device models used by the visitor. This provides granular insight into the exact hardware being used.<br><br><span class="text-sm text-slate-500">Example:<br>iPhone 14 Pro (2)<br>Galaxy S23 (1)</span>'),
+                        'iconString' => fn($value) => '<img src="'.asset('vendor/analytics/icons/devices/'.formatDevice($value).'.svg').'" alt="'.formatDevice($value).'" class="w-4 h-4">',
+                    ],
+                    'browser.device.cpu_cores' => [
+                        'label' => __('CPU Cores'),
+                        'icon' => 'heroicon-o-cpu-chip',
+                        'transform' => fn($value) => collect($agent['browser']['device']['cpu_cores'])
+                            ->map(fn($count, $cores) => "$cores ($count)")
+                            ->toArray(),
+                        'tooltip' => __('<strong>CPU Cores</strong><br>Indicates the number of processor cores in the devices used by the visitor. This provides insight into the processing power of visitor devices.<br><br><span class="text-sm text-slate-500">Example:<br>8 (3)<br>4 (1)</span>'),
+                        'iconString' => fn($value) => '<img src="'.asset('vendor/analytics/icons/devices/'.formatDevice($value).'.svg').'" alt="'.formatDevice($value).'" class="w-4 h-4">',
+                    ],
+                    'browser.device.device_memory' => [
+                        'label' => __('Memory'),
+                        'transform' => fn($value) => collect($agent['browser']['device']['device_memory'])
+                            ->map(fn($count, $mem) => "{$mem} ($count)")
+                            ->toArray(),
+                        'tooltip' => __('<strong>Device Memory</strong><br>Shows the amount of RAM in the devices used by the visitor. This provides insight into the memory capacity of visitor devices.<br><br><span class="text-sm text-slate-500">Example:<br>8GB (3)<br>16GB (1)</span>'),
+                        'iconString' => fn($value) => '<img src="'.asset('vendor/analytics/icons/devices/'.formatDevice($value).'.svg').'" alt="'.formatDevice($value).'" class="w-4 h-4">',
+                    ]
+                ]
+            ],
+            [
+                'type' => 'key-value',
+                'title' => __('Additional Features'),
+                'icon' => 'heroicon-o-puzzle-piece',
+                'color' => 'amber-500',
+                'fields' => [
+                    'languages' => [
+                        'icon' => 'heroicon-o-language',
+                        'label' => __('Languages'),
+                        'transform' => fn($value) => collect($value)->filter()->map(fn($count, $lang) => Str::limit($lang, 5) . " ($count)")->take(3)->toArray(),
+                        'tooltip' => __('<strong>Languages</strong><br>Shows the languages configured in the visitor\'s browser. This helps identify the preferred languages of your visitors.<br><br><span class="text-sm text-slate-500">Example:<br>en (3)<br>es (1)</span>')
+                    ],
+                    'timezones' => [
+                        'icon' => 'heroicon-o-clock',
+                        'label' => __('Timezones'),
+                        'transform' => fn($value) => collect($value)->filter()->map(fn($count, $tz) => Str::afterLast($tz, '/') . " ($count)")->take(2)->toArray(),
+                        'tooltip' => __('<strong>Timezones</strong><br>Indicates the timezones detected from the visitor\'s browser. This provides insight into the geographical distribution of your visitors.<br><br><span class="text-sm text-slate-500">Example:<br>New_York (2)<br>London (1)</span>')
+                    ]
+                ]
+            ],
+            [
+                'type' => 'raw',
+                'title' => __('Raw User Agent'),
+                'icon' => 'heroicon-o-code-bracket',
+                'color' => 'rose-500',
+                'value' => $agent['parsed']['raw'] ?? $agent['user_agent']
+            ]
+        ];
+    }
+
+    public function visitStats($agent)
+    {
+        return [
+            [
+                'color' => 'blue',
+                'icon' => 'heroicon-o-users',
+                'label' => __('Unique Visitors'),
+                'value' => number_format($agent['unique_visitors']),
+                'tooltip' => __('The number of unique visitors to the site.')
+            ],
+            [
+                'color' => 'emerald',
+                'icon' => 'heroicon-o-arrow-path',
+                'label' => __('Total Visits'),
+                'value' => number_format($agent['total_visits']),
+                'tooltip' => __('The total number of visits to the site.')
+            ],
+            [
+                'color' => 'purple',
+                'icon' => 'heroicon-o-chart-bar',
+                'label' => __('Visits/Visitor'),
+                'value' => number_format($agent['total_visits'] / $agent['unique_visitors'], 1),
+                'tooltip' => __('The average number of visits per unique visitor.')
+            ],
+        ];
+    }
+
 }

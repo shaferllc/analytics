@@ -6,7 +6,7 @@
             if (target.closest('#ts-monitor-debug') || target.closest('#ts-monitor-debug-toggle')) {
                 return; // Don't process clicks within the debugger or its toggle
             }
-            utils.debugLog('Click event detected');
+            utils.debugInfo('Click event detected');
             TSMonitor.instance.queueRequest({
                 name: 'click',
                 value: {

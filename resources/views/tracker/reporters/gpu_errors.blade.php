@@ -38,7 +38,7 @@ trackGPUInternalErrors() {
                         }
                     }
                 });
-                utils.debugLog('GPU internal error tracked:', error);
+                utils.debugError('GPU internal error tracked:', error);
             }
             return error;
         };
@@ -81,7 +81,7 @@ trackGPUOutOfMemoryError() {
                         }
                     }
                 });
-                utils.debugLog('GPU out of memory error tracked:', error);
+                utils.debugError('GPU out of memory error tracked:', error);
             }
             return error;
         };
@@ -119,7 +119,7 @@ trackGPUPipelineError() {
                         }
                     }
                 });
-                utils.debugLog('GPU pipeline error tracked:', error);
+                utils.debugError('GPU pipeline error tracked:', error);
             }
             return error;
         };
@@ -155,7 +155,7 @@ trackGPUValidationError() {
                     }
                 }
             });
-            utils.debugLog('GPU validation error tracked:', error);
+            utils.debugError('GPU validation error tracked:', error);
         });
     }
 }
@@ -190,7 +190,7 @@ trackGPUUncapturedError() {
                     }
                 }
             });
-            utils.debugLog('GPU uncaptured error tracked:', error);
+            utils.debugError('GPU uncaptured error tracked:', error);
         });
     }
 }
@@ -230,7 +230,7 @@ trackGPUErrors() {
                         }
                     }
                 });
-                utils.debugLog('GPU error tracked:', errorName, error);
+                utils.debugError('GPU error tracked:', errorName, error);
             }
             return error;
         };

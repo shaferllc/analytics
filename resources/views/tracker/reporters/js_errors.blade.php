@@ -20,7 +20,7 @@ trackOverconstrainedError() {
                     }
                 }
             });
-            utils.debugLog('OverconstrainedError tracked:', error);
+            utils.debugError('OverconstrainedError tracked:', error);
         });
     }
 }
@@ -96,7 +96,7 @@ reportError(msg, url, lineNo, columnNo, error) {
             }
         }
     });
-    utils.debugLog('Exception tracked:', {msg, url, lineNo, columnNo, error});
+    utils.debugError('Exception tracked:', {msg, url, lineNo, columnNo, error});
     return false;
 };
 
@@ -109,7 +109,7 @@ trackJSErrors() {
                 type: 'error',
                 message: event.message || 'Unknown error',
                 source: event.filename || 'Unknown source',
-                lineno: event.lineno || 0, 
+                lineno: event.lineno || 0,
                 colno: event.colno || 0,
                 error: event.error ? {
                     name: event.error.name || 'Error',
@@ -147,7 +147,7 @@ trackJSErrors() {
                 }
             }
         });
-        utils.debugLog('JavaScript error tracked:', event);
+        utils.debugError('JavaScript error tracked:', event);
     });
 
     // Capture unhandled promise rejections
@@ -183,7 +183,7 @@ trackJSErrors() {
                 }
             }
         });
-        utils.debugLog('Unhandled promise rejection tracked:', event);
+        utils.debugError('Unhandled promise rejection tracked:', event);
     });
 
     // Override console.error to capture console errors
@@ -208,7 +208,7 @@ trackJSErrors() {
                 }
             }
         });
-        utils.debugLog('Console error tracked:', args);
+        utils.debugError('Console error tracked:', args);
         originalConsoleError.apply(console, args);
     };
 
@@ -258,7 +258,7 @@ trackJSErrors() {
                 }
             }
         });
-        utils.debugLog('Exception tracked:', {msg, url, lineNo, columnNo, error});
+        utils.debugError('Exception tracked:', {msg, url, lineNo, columnNo, error});
         return false;
     };
 }
@@ -292,7 +292,7 @@ trackRTCError() {
                         }
                     }
                 });
-                utils.debugLog('RTCError tracked:', error);
+                utils.debugError('RTCError tracked:', error);
             }
         });
     }
@@ -327,7 +327,7 @@ trackRTCErrorEvent() {
                         }
                     }
                 });
-                utils.debugLog('RTCErrorEvent tracked:', error);
+                utils.debugError('RTCErrorEvent tracked:', error);
             }
         });
     }
@@ -356,7 +356,7 @@ trackSensorErrorEvent() {
                         }
                     }
                 });
-                utils.debugLog('SensorErrorEvent tracked:', error);
+                utils.debugError('SensorErrorEvent tracked:', error);
             }
         });
     }
@@ -384,7 +384,7 @@ trackSpeechSynthesisErrorEvent() {
                         }
                     }
                 });
-                utils.debugLog('SpeechSynthesisErrorEvent tracked:', error);
+                utils.debugError('SpeechSynthesisErrorEvent tracked:', error);
             }
         });
     }
@@ -414,7 +414,7 @@ trackWebTransportError() {
                         }
                     }
                 });
-                utils.debugLog('WebTransportError tracked:', error);
+                utils.debugError('WebTransportError tracked:', error);
             }
         });
     }
@@ -443,7 +443,7 @@ trackSpeechRecognitionErrorEvent() {
                         }
                     }
                 });
-                utils.debugLog('SpeechRecognitionErrorEvent tracked:', error);
+                utils.debugError('SpeechRecognitionErrorEvent tracked:', error);
             }
         });
     }

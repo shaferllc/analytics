@@ -57,7 +57,7 @@ handleSearchFormSubmit(event) {
         utils.updateEngagementScore(1);
 
         this.queueRequest(searchData);
-        utils.debugLog('Search interaction tracked:', searchData);
+        utils.debugInfo('Search interaction tracked:', searchData);
 
         // Store timestamp for duration calculation
         this.lastSearchTime = Date.now();
@@ -83,7 +83,7 @@ handleSearchInput(event) {
     };
 
     this.queueRequest(searchData);
-    utils.debugLog('Search typing tracked:', searchData);
+    utils.debugInfo('Search typing tracked:', searchData);
 }
 
 handleSearchResultClick(event) {
@@ -106,7 +106,7 @@ handleSearchResultClick(event) {
     };
 
     this.queueRequest(searchData);
-    utils.debugLog('Search result click tracked:', searchData);
+    utils.debugInfo('Search result click tracked:', searchData);
 }
 
 handleAutocompleteClick(event) {
@@ -126,7 +126,7 @@ handleAutocompleteClick(event) {
     };
 
     this.queueRequest(searchData);
-    utils.debugLog('Search autocomplete interaction tracked:', searchData);
+    utils.debugInfo('Search autocomplete interaction tracked:', searchData);
 }
 
 isSearchInput(input) {

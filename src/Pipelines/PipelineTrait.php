@@ -41,7 +41,7 @@ trait PipelineTrait
                 $this->createMetaRecord($parent_event, $key, $value);
             } else {
                 $parent = $this->createMetaRecord($parent_event, $key, $value);
-                $this->processNestedValues($parent_event, $parent, $key, $value);
+                // $this->processNestedValues($parent_event, $parent, $key, $value);
             }
         }
     }
@@ -61,10 +61,7 @@ trait PipelineTrait
 
         if($parent->wasRecentlyCreated) {
             $parent->meta_data->set([$key => $value]);
-        } else {
-            ray('first time');
         }
-
         $parent->save();
 
         return $parent;

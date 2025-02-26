@@ -1,104 +1,244 @@
-<x-website :website="$site">
-    <div class="space-y-4">
-        <x-analytics::breadcrumbs :breadcrumbs="[
-            [
-                'url' => route('websites.analytics.overview', ['website' => $site->id]),
-                'label' => __('Dashboard'),
-            ],
-            [
-                'url' => route('websites.analytics.acquisitions', ['website' => $site->id]),
-                'label' => __('Acquisitions'),
-            ],
-            [
-                'url' => route('websites.analytics.search-engines', ['website' => $site->id]),
-                'label' => __('Search Engines'),
-            ]
+<x-site :site="$site">
+    <div class="space-y-8">
+        <x-breadcrumbs :breadcrumbs="[
+            ['url' => route('sites.analytics.overview', ['site' => $site->id]), 'label' => __('Analytics Dashboard')],
+            ['url' => route('sites.analytics.search-engines', ['site' => $site->id]), 'label' => __('Search Engines'), 'icon' => 'fas-search']
         ]" />
-        @include('analytics::livewire.partials.nav')
 
-        <x-analytics::title
-            :title="__('Search Engines')"
-            :description="__('Search engines used to access your website.')"
-            :totalPageviews="$total"
-            :icon="'heroicon-o-magnifying-glass'"
-            :totalText="__('Total Search Engines')"
-            :data="$data"
-            :total="$total"
-            :first="$first"
-            :last="$last"
-            :website="$site"
-            :daterange="$daterange"
-            :perPage="$perPage"
-            :sortBy="$sortBy"
-            :sort="$sort"
-            :from="$from"
-            :sortWords="['count' => __('Pageviews'), 'value' => __('Search Engine')]"
-            :to="$to"
-            :search="$search"
-        />
+        <div class="flex justify-end gap-4">
+            <x-ts-dropdown position="bottom-end">
+                <x-slot:action>
+                    <x-ts-button x-on:click="show = !show" sm>{{ __('Time Range') }}</x-ts-button>
+                </x-slot:action>
+                <x-ts-dropdown.items wire:click="setTimeRange('today')" :active="$daterange === 'today'">{{ __('Today') }}</x-ts-dropdown.items>
+                <x-ts-dropdown.items wire:click="setTimeRange('7d')" :active="$daterange === '7d'">{{ __('Last 7 Days') }}</x-ts-dropdown.items>
+                <x-ts-dropdown.items wire:click="setTimeRange('30d')" :active="$daterange === '30d'">{{ __('Last 30 Days') }}</x-ts-dropdown.items>
+                <x-ts-dropdown.items wire:click="setTimeRange('90d')" :active="$daterange === '90d'">{{ __('Last 90 Days') }}</x-ts-dropdown.items>
+            </x-ts-dropdown>
 
-        <div>
-            @if(count($data) == 0)
-                <x-analytics::no-results />
-            @else
-                <div x-data="{ view: '{{ $display }}' }" class="space-y-4">
-                    <x-analytics::view-switcher :data="$data" color="indigo" />
+            <x-ts-button wire:click="exportData" sm>
+                <x-icon name="heroicon-o-arrow-down-tray" class="w-4 h-4 mr-2" />
+                {{ __('Export') }}
+            </x-ts-button>
+        </div>
 
-                    <x-analytics::view view="list" color="indigo" class="bg-gradient-to-br from-indigo-900 to-indigo-950 rounded-xl shadow-lg border border-indigo-800 p-6 backdrop-blur-xl">
-                        <div class="flex flex-col space-y-6">
-                            @foreach($data as $searchEngine)
-                                <div class="flex items-center space-x-4 group hover:bg-indigo-800/20 p-4 rounded-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-lg border border-indigo-800">
-                                    <div class="flex-1">
-                                        <div class="relative">
-                                            <div class="text-sm text-indigo-100 mb-2">
-                                                <div class="flex items-center justify-between">
-                                                    <div class="flex flex-col">
-                                                        <div class="flex items-center space-x-2">
-                                                            <x-tooltip :text="__('Search Engine')" class="group-hover:opacity-100">
-                                                                <span class="font-medium bg-gradient-to-r from-indigo-200 to-indigo-100 bg-clip-text text-transparent">
-                                                                    <x-icon name="heroicon-o-magnifying-glass" class="w-4 h-4 inline mr-1 text-indigo-300" />
-                                                                    {{ $searchEngine->value ?: __('Unknown') }}
-                                                                </span>
-                                                            </x-tooltip>
+        <div class="grid grid-cols-1 gap-4">
+            <div class="relative bg-white/90 dark:bg-slate-800/90 rounded-2xl shadow-lg border border-slate-200/60 dark:border-slate-700/60 p-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Basic Stats -->
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-emerald-50 dark:bg-emerald-800/20 rounded-lg">
+                                <x-icon name="fas-search" class="w-6 h-6 text-emerald-500" />
+                            </div>
+                            <div>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('Total Search Engines') }}</p>
+                                <p class="text-xl font-semibold text-emerald-600 dark:text-emerald-400">
+                                    {{ number_format($aggregates['total_categories']) }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex justify-between text-sm items-center">
+                            <span class="text-slate-500 flex items-center gap-2">
+                                <x-icon name="heroicon-o-users" class="w-4 h-4 text-blue-500" />
+                                {{ __('Unique Visitors') }}:
+                            </span>
+                            <span class="font-medium text-blue-600 dark:text-blue-400">{{ number_format($aggregates['unique_visitors']) }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm items-center">
+                            <span class="text-slate-500 flex items-center gap-2">
+                                <x-icon name="heroicon-o-arrow-path" class="w-4 h-4 text-purple-500" />
+                                {{ __('Total Visits') }}:
+                            </span>
+                            <span class="font-medium text-purple-600 dark:text-purple-400">{{ number_format($aggregates['total_visits']) }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Engagement Metrics -->
+                    <div class="space-y-2">
+                        <h3 class="font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                            <x-icon name="heroicon-o-chart-bar" class="w-5 h-5 text-indigo-500" />
+                            {{ __('Engagement') }}
+                        </h3>
+                        <div class="flex justify-between text-sm items-center">
+                            <span class="text-slate-500 flex items-center gap-2">
+                                <x-icon name="heroicon-o-arrow-trending-up" class="w-4 h-4 text-sky-500" />
+                                {{ __('Avg Visits/Engine') }}:
+                            </span>
+                            <span class="font-medium text-sky-600 dark:text-sky-400">{{ number_format($aggregates['average_visits_per_visitor'], 1) }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm items-center">
+                            <span class="text-slate-500 flex items-center gap-2">
+                                <x-icon name="heroicon-o-arrow-uturn-left" class="w-4 h-4 text-teal-500" />
+                                {{ __('Return Rate') }}:
+                            </span>
+                            <span class="font-medium text-teal-600 dark:text-teal-400">{{ number_format($aggregates['visitor_retention_rate'], 1) }}%</span>
+                        </div>
+                    </div>
+
+                    <!-- Visit Distribution -->
+                    <div class="space-y-2">
+                        <h3 class="font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                            <x-icon name="heroicon-o-chart-pie" class="w-5 h-5 text-rose-500" />
+                            {{ __('Visit Patterns') }}
+                        </h3>
+                        <div class="flex justify-between text-sm items-center">
+                            <span class="text-slate-500 flex items-center gap-2">
+                                <x-icon name="heroicon-o-user" class="w-4 h-4 text-red-500" />
+                                {{ __('Single Visit Engines') }}:
+                            </span>
+                            <span class="font-medium text-red-600 dark:text-red-400">{{ number_format($aggregates['categories_with_single_visit']) }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm items-center">
+                            <span class="text-slate-500 flex items-center gap-2">
+                                <x-icon name="heroicon-o-users" class="w-4 h-4 text-orange-500" />
+                                {{ __('Multiple Visit Engines') }}:
+                            </span>
+                            <span class="font-medium text-orange-600 dark:text-orange-400">{{ number_format($aggregates['categories_with_multiple_visits']) }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <x-loading />
+        @if($searchEngines->isNotEmpty())
+            <div class="space-y-6">
+                <div class="relative bg-white/90 dark:bg-slate-800/90 rounded-2xl shadow-lg border border-slate-200/60 dark:border-slate-700/60 p-6 overflow-hidden" x-data="{ isOpen: true }">
+                    <div class="cursor-pointer" @click="isOpen = !isOpen">
+                        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                            <div class="space-y-2 flex-initial">
+                                <div class="flex items-center gap-4">
+                                    <div class="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
+                                        <x-icon name="fas-search" class="w-6 h-6 text-emerald-500" />
+                                    </div>
+                                    <div>
+                                        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
+                                            {{ __('Search Engines') }}
+                                        </h2>
+                                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                                            {{ __('Detailed Insights Into Search Engine Usage') }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-2 p-2 hover:bg-slate-100/50 dark:hover:bg-slate-700/20 rounded-lg transition-colors">
+                                <div>
+                                    <template x-if="isOpen">
+                                        <x-icon name="heroicon-o-chevron-up" class="w-6 h-6 text-slate-400 bg-slate-100/50 dark:bg-slate-500/20 rounded-lg p-1"  />
+                                    </template>
+                                    <template x-if="!isOpen">
+                                        <x-icon name="heroicon-o-chevron-down" class="w-6 h-6 text-slate-400 bg-slate-100/50 dark:bg-slate-500/20 rounded-lg p-1" />
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div x-show="isOpen" x-collapse>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                            @foreach($searchEngines as $engine)
+                                <div class="relative bg-slate-50/50 dark:bg-slate-700/20 rounded-xl p-6" x-data="{ showDetails: false }">
+                                    <div class="flex justify-between items-start mb-4">
+                                        <div class="flex items-center gap-3">
+                                            <x-icon name="fas-search" class="w-6 h-6 text-slate-400" />
+                                            <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ $engine['value'] }}</span>
+                                        </div>
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-800/30 dark:text-emerald-200">
+                                            {{ number_format($engine['unique_visitors']) }} {{ __('Users') }}
+                                        </span>
+                                    </div>
+
+                                    <!-- Basic Stats - Always Visible -->
+                                    <div class="grid grid-cols-2 gap-4 text-sm mb-4">
+                                        <div>
+                                            <p class="text-slate-500 dark:text-slate-400">{{ __('First Seen') }}</p>
+                                            <p class="font-medium text-slate-700 dark:text-slate-300">{{ Carbon\Carbon::parse($engine['first_seen'])->format('M j, Y') }}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-slate-500 dark:text-slate-400">{{ __('Last Seen') }}</p>
+                                            <p class="font-medium text-slate-700 dark:text-slate-300">{{ Carbon\Carbon::parse($engine['last_seen'])->format('M j, Y') }}</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Show More Button -->
+                                    <button
+                                        @click="showDetails = !showDetails"
+                                        class="w-full py-2 px-4 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-700/50 rounded-lg transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <span x-text="showDetails ? '{{ __('Show Less') }}' : '{{ __('Show More') }}'"></span>
+                                        <x-icon
+                                            :name="'heroicon-o-chevron-down'"
+                                            class="w-4 h-4 transition-transform"
+                                            ::class="showDetails ? 'rotate-180' : ''"
+                                        />
+                                    </button>
+
+                                    <!-- Detailed Content -->
+                                    <div x-show="showDetails" x-collapse class="mt-4 space-y-4">
+                                        <!-- Visit Days and Percentage -->
+                                        <div class="grid grid-cols-2 gap-4 text-sm">
+                                            <div>
+                                                <p class="text-slate-500 dark:text-slate-400">{{ __('Visit Days') }}</p>
+                                                <p class="font-medium text-slate-700 dark:text-slate-300">{{ number_format($engine['visit_days']) }}</p>
+                                            </div>
+                                            <div>
+                                                <p class="text-slate-500 dark:text-slate-400">{{ __('Percentage') }}</p>
+                                                <p class="font-medium text-slate-700 dark:text-slate-300">{{ number_format($engine['percentage'], 1) }}%</p>
+                                            </div>
+                                        </div>
+
+                                        <!-- Meta Data -->
+                                        @if(!empty($engine['meta_data']))
+                                            <div class="border-t border-slate-200 dark:border-slate-700 pt-4">
+                                                <p class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-4">{{ __('Search Engine Details') }}</p>
+                                                <div class="grid grid-cols-2 gap-6">
+                                                    @foreach($engine['meta_data'] as $key => $meta)
+                                                        <div>
+                                                            <p class="text-sm text-slate-500 dark:text-slate-400">{{ __(Str::title(str_replace('-', ' ', $key))) }}</p>
+                                                            <p class="font-medium text-slate-700 dark:text-slate-300">{{ $meta }}</p>
                                                         </div>
-                                                    </div>
-                                                    <div class="flex items-center space-x-2">
-                                                        <x-tooltip :text="__('Total pageviews from this search engine')" class="group-hover:opacity-100">
-                                                            <span class="hover:text-indigo-200 transition-colors">
-                                                                <x-icon name="heroicon-o-eye" class="w-3 h-3 inline mr-1 text-indigo-300" />
-                                                                {{ number_format($searchEngine->count, 0, __('.'), __(',')) }} {{ __('pageviews') }}
-                                                            </span>
-                                                        </x-tooltip>
-                                                    </div>
+                                                    @endforeach
                                                 </div>
                                             </div>
-                                            <div class="flex flex-col space-y-1">
-                                                <div class="overflow-hidden h-2 text-xs flex rounded-lg bg-indigo-700/30">
-                                                    <div style="width: {{ $aggregates['total_count'] > 0 ? ($searchEngine->count / $aggregates['total_count']) * 100 : 0 }}%"
-                                                        class="shadow-lg bg-gradient-to-r from-indigo-400 to-indigo-600 transition-all duration-300 hover:from-indigo-300 hover:to-indigo-500">
+                                        @endif
+
+                                        <!-- Visitor Stats -->
+                                        <div class="border-t border-slate-200 dark:border-slate-700 pt-4">
+                                            <div class="grid grid-cols-3 gap-4">
+                                                <div>
+                                                    <div class="flex items-start space-x-3">
+                                                        <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                                                            <x-icon name="heroicon-o-users" class="w-5 h-5 text-blue-500 dark:text-blue-400"/>
+                                                        </div>
+                                                        <div>
+                                                            <p class="text-slate-500 dark:text-slate-400 text-xs">{{ __('Unique Visitors') }}</p>
+                                                            <p class="font-semibold text-slate-800 dark:text-slate-200 mt-0.5">{{ number_format($engine['unique_visitor_count']) }}</p>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <div class="flex justify-between text-xs text-indigo-300">
-                                                    <div class="flex space-x-4">
-                                                        <x-tooltip :text="__('First seen')" class="group-hover:opacity-100">
-                                                            <span class="hover:text-indigo-200 transition-colors">
-                                                                <x-icon name="heroicon-o-clock" class="w-3 h-3 inline mr-1 text-indigo-300" />
-                                                                {{ $searchEngine->created_at->diffForHumans() }}
-                                                            </span>
-                                                        </x-tooltip>
-                                                        <x-tooltip :text="__('Last seen')" class="group-hover:opacity-100">
-                                                            <span class="hover:text-indigo-200 transition-colors">
-                                                                <x-icon name="heroicon-o-arrow-path" class="w-3 h-3 inline mr-1 text-indigo-300" />
-                                                                {{ $searchEngine->updated_at->diffForHumans() }}
-                                                            </span>
-                                                        </x-tooltip>
+                                                <div>
+                                                    <div class="flex items-start space-x-3">
+                                                        <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-900/20">
+                                                            <x-icon name="heroicon-o-arrow-path" class="w-5 h-5 text-emerald-500 dark:text-emerald-400"/>
+                                                        </div>
+                                                        <div>
+                                                            <p class="text-slate-500 dark:text-slate-400 text-xs">{{ __('Total Visits') }}</p>
+                                                            <p class="font-semibold text-slate-800 dark:text-slate-200 mt-0.5">{{ number_format($engine['total_visits']) }}</p>
+                                                        </div>
                                                     </div>
-                                                    <x-tooltip :text="__('Percentage of total pageviews')" class="group-hover:opacity-100">
-                                                        <span class="hover:text-indigo-200 transition-colors">
-                                                            <x-icon name="heroicon-o-chart-pie" class="w-3 h-3 inline mr-1 text-indigo-300" />
-                                                            {{ $aggregates['total_count'] > 0 ? number_format(($searchEngine->count / $aggregates['total_count']) * 100, 1) : 0 }}%
-                                                        </span>
-                                                    </x-tooltip>
+                                                </div>
+                                                <div>
+                                                    <div class="flex items-start space-x-3">
+                                                        <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-purple-50 dark:bg-purple-900/20">
+                                                            <x-icon name="heroicon-o-chart-bar" class="w-5 h-5 text-purple-500 dark:text-purple-400"/>
+                                                        </div>
+                                                        <div>
+                                                            <p class="text-slate-500 dark:text-slate-400 text-xs">{{ __('Visits/Visitor') }}</p>
+                                                            <p class="font-semibold text-slate-800 dark:text-slate-200 mt-0.5">{{ number_format($engine['visits_per_visitor'], 1) }}</p>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -106,127 +246,23 @@
                                 </div>
                             @endforeach
                         </div>
-                    </x-analytics::view>
 
-                    <x-analytics::view view="compact" color="indigo" class="overflow-hidden rounded-xl border border-indigo-800 shadow-lg shadow-indigo-900/20">
-                        <table class="min-w-full divide-y divide-indigo-800">
-                            <thead class="bg-indigo-900">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-indigo-300 uppercase tracking-wider">
-                                        <x-icon name="heroicon-o-magnifying-glass" class="w-4 h-4 inline mr-1" />
-                                        {{ __('Search Engine') }}
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-indigo-300 uppercase tracking-wider">
-                                        <x-icon name="heroicon-o-eye" class="w-4 h-4 inline mr-1" />
-                                        {{ __('Pageviews') }}
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-indigo-300 uppercase tracking-wider">
-                                        <x-icon name="heroicon-o-chart-pie" class="w-4 h-4 inline mr-1" />
-                                        {{ __('Percentage') }}
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-indigo-300 uppercase tracking-wider">
-                                        {{ __('Graph') }}
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-indigo-950 divide-y divide-indigo-800">
-                                @foreach($data as $searchEngine)
-                                    <tr class="hover:bg-indigo-900/50 transition-colors">
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                <div class="text-sm font-medium text-indigo-100" x-data="{ showFull: false }" @mouseenter="showFull = true" @mouseleave="showFull = false">
-                                                    <x-tooltip :text="__('Search Engine name')">
-                                                        <span x-show="showFull" class="break-all">{{ $searchEngine->value ?: __('Unknown') }}</span>
-                                                        <span x-show="!showFull" x-cloak>{{ Str::limit($searchEngine->value, 70) ?: __('Unknown') }}</span>
-                                                    </x-tooltip>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-indigo-100">
-                                            <x-tooltip :text="__('Total pageviews from this search engine')">
-                                                {{ number_format($searchEngine->count, 0, __('.'), __(',')) }}
-                                            </x-tooltip>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-indigo-100">
-                                            <x-tooltip :text="__('Percentage of total pageviews')">
-                                                {{ number_format(($searchEngine->count / $aggregates['total_count']) * 100, 1) }}%
-                                            </x-tooltip>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="w-32 h-2 text-xs flex rounded-full ml-auto bg-indigo-700/30">
-                                                <div style="width: {{ $aggregates['total_count'] > 0 ? ($searchEngine->count / $aggregates['total_count']) * 100 : 0 }}%"
-                                                    class="shadow-lg bg-gradient-to-r from-indigo-400 to-indigo-600">
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </x-analytics::view>
-
-                    <x-analytics::view view="cards" color="indigo" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        @foreach($data as $searchEngine)
-                            <div class="bg-gradient-to-br from-indigo-900 to-indigo-950 rounded-xl shadow-lg border border-indigo-800 p-6 backdrop-blur-xl hover:scale-[1.02] transition-transform duration-300">
-                                <div class="flex flex-col space-y-4">
-                                    <div class="flex items-center justify-between">
-                                        <div class="flex items-center space-x-2">
-                                            <x-tooltip :text="__('Search Engine')">
-                                                <span class="font-medium bg-gradient-to-r from-indigo-200 to-indigo-100 bg-clip-text text-transparent">
-                                                    <x-icon name="heroicon-o-magnifying-glass" class="w-4 h-4 inline mr-1 text-indigo-300" />
-                                                    {{ $searchEngine->value ?: __('Unknown') }}
-                                                </span>
-                                            </x-tooltip>
-                                        </div>
-                                        <x-tooltip :text="__('Total pageviews from this search engine')">
-                                            <span class="text-indigo-100">
-                                                <x-icon name="heroicon-o-eye" class="w-4 h-4 inline mr-1" />
-                                                {{ number_format($searchEngine->count, 0, __('.'), __(',')) }}
-                                            </span>
-                                        </x-tooltip>
-                                    </div>
-
-                                    <div class="space-y-2">
-                                        <div class="overflow-hidden h-2 text-xs flex rounded-lg bg-indigo-700/30">
-                                            <div style="width: {{ ($searchEngine->count / $aggregates['total_count']) * 100 }}%"
-                                                class="shadow-lg bg-gradient-to-r from-indigo-400 to-indigo-600">
-                                            </div>
-                                        </div>
-
-                                        <div class="flex justify-between text-xs text-indigo-300">
-                                            <div class="flex space-x-4">
-                                                <x-tooltip :text="__('First seen')">
-                                                    <span class="hover:text-indigo-200 transition-colors">
-                                                        <x-icon name="heroicon-o-clock" class="w-3 h-3 inline mr-1 text-indigo-300" />
-                                                        {{ $searchEngine->created_at->diffForHumans() }}
-                                                    </span>
-                                                </x-tooltip>
-                                                <x-tooltip :text="__('Last seen')">
-                                                    <span class="hover:text-indigo-200 transition-colors">
-                                                        <x-icon name="heroicon-o-arrow-path" class="w-3 h-3 inline mr-1 text-indigo-300" />
-                                                        {{ $searchEngine->updated_at->diffForHumans() }}
-                                                    </span>
-                                                </x-tooltip>
-                                            </div>
-                                            <x-tooltip :text="__('Percentage of total pageviews')">
-                                                <span class="hover:text-indigo-200 transition-colors">
-                                                    <x-icon name="heroicon-o-chart-pie" class="w-3 h-3 inline mr-1 text-indigo-300" />
-                                                    {{ number_format(($searchEngine->count / $aggregates['total_count']) * 100, 1) }}%
-                                                </span>
-                                            </x-tooltip>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        @endforeach
-                    </x-analytics::view>
-
+                        <!-- Pagination -->
+                        <x-pagination :paginator="$searchEngines" type="compact"/>
+                    </div>
                 </div>
-
-                <div class="mt-6">
-                    <x-analytics::pagination :data="$data" />
-                </div>
-            @endif
-        </div>
+            </div>
+        @else
+            <div class="flex flex-col items-center justify-center py-20 bg-gradient-to-br from-slate-50 to-white dark:from-slate-900/90 dark:to-slate-800/90 rounded-2xl border border-dashed border-slate-200/60 dark:border-slate-700/60">
+                <x-icon name="fas-search" class="w-12 h-12 text-slate-400 mb-4"/>
+                <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2">{{ __('No Search Engine Data Available') }}</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('Start Monitoring To Collect Search Engine Metrics') }}</p>
+            </div>
+        @endif
     </div>
-</x-website>
+</x-site>
+
+@pushOnce('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+@endPushOnce
+

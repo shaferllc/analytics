@@ -1,13 +1,14 @@
-static toggleDebug(value, mode = 'js') {
-    if (mode === 'js') {
-        TSMonitorConfig.isDebug = value;
-        utils.debugLog('JavaScript Debug mode ' + (TSMonitor.isDebug ? 'enabled' : 'disabled'));
-    } else if (mode === 'browser') {
-        TSMonitorConfig.browserDebug = value;
-        utils.debugLog('Browser Debug mode ' + (TSMonitorConfig.browserDebug ? 'enabled' : 'disabled'));
-        this.toggleDebugElement(TSMonitorConfig.isDebug || TSMonitorConfig.browserDebug);
-    }
+static toggleDebug(value) {
+    TSMonitorConfig.isDebug = value;
+    utils.debugLog('JavaScript Debug mode ' + (TSMonitor.isDebug ? 'Enabled' : 'Disabled'));
 }
+
+static toggleBrowserDebug(value) {
+    TSMonitorConfig.browserDebug = value;
+    utils.debugLog('Browser Debug mode ' + (TSMonitorConfig.browserDebug ? 'Enabled' : 'Disabled'));
+    this.toggleDebugElement(TSMonitorConfig.isDebug || TSMonitorConfig.browserDebug);
+}
+
 
 static debugEnabled() {
     return TSMonitorConfig.isDebug || TSMonitorConfig.browserDebug;
@@ -26,22 +27,64 @@ static createDebugElement() {
     debugElement.id = 'ts-monitor-debug';
     debugElement.style.cssText = `
         position: fixed;
-        bottom: 40px;
-        right: 10px;
-        width: 400px;
-        height: 600px;
-        background: rgba(0,0,0,0.9);
+        bottom: 0;
+        right: 0;
+        width: 100vw;
+        height: 40vh;
+        background: rgba(0,0,0,0.95);
         color: white;
         overflow-y: auto;
         font-family: monospace;
         font-size: 12px;
         z-index: 9999;
         display: none;
-        border-radius: 15px;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-        transition: all 0.3s ease;
-        padding: 20px;
+        border-top: 1px solid #333;
+        padding: 0px 20px 20px 20px;
     `;
+
+    // Add resize handle
+    const resizeHandle = document.createElement('div');
+    resizeHandle.style.cssText = `
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 20px;
+        height: 20px;
+        cursor: nw-resize;
+        z-index: 10000;
+        background: linear-gradient(45deg, #333 50%, transparent 50%);
+    `;
+    debugElement.appendChild(resizeHandle);
+
+    // Add touch support for mobile devices
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchStartWidth = 0;
+    let touchStartHeight = 0;
+
+    resizeHandle.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        touchStartWidth = debugElement.offsetWidth;
+        touchStartHeight = debugElement.offsetHeight;
+        document.addEventListener('touchmove', handleTouchResize);
+        document.addEventListener('touchend', stopTouchResize);
+    });
+
+    const handleTouchResize = (e) => {
+        const touchX = e.touches[0].clientX;
+        const touchY = e.touches[0].clientY;
+        const newWidth = touchStartWidth + (touchX - touchStartX);
+        const newHeight = touchStartHeight + (touchY - touchStartY);
+        debugElement.style.width = `${Math.max(Math.min(newWidth, window.innerWidth * 0.9), 300)}px`;
+        debugElement.style.height = `${Math.max(Math.min(newHeight, window.innerHeight * 0.9), 200)}px`;
+    };
+
+    const stopTouchResize = () => {
+        document.removeEventListener('touchmove', handleTouchResize);
+        document.removeEventListener('touchend', stopTouchResize);
+    };
 
     // Add advanced stats to the debug element
     debugElement.innerHTML = `
@@ -129,22 +172,41 @@ static createDebugElement() {
             </div>
         </div>
         <div id="ts-monitor-debug-log" style="margin-top: 20px; border-top: 1px solid #444; padding-top: 20px;">
-            <h3 style="color: #007bff;">Debug Log</h3>
+            <h3 style="color: #007bff; margin-bottom: 10px;">Debug Log</h3>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <button onclick="TSMonitor.clearDebugLog()" style="padding: 4px 8px; background: rgba(255,255,255,0.1); border: 1px solid #444; color: #fff; cursor: pointer;">Clear Log</button>
+                <button onclick="TSMonitor.toggleLogLevel('all')" style="padding: 4px 8px; background: rgba(255,255,255,0.1); border: 1px solid #444; color: #fff; cursor: pointer;">All</button>
+                <button onclick="TSMonitor.toggleLogLevel('info')" style="padding: 4px 8px; background: rgba(0,188,212,0.1); border: 1px solid #00bcd4; color: #00bcd4; cursor: pointer;">Info</button>
+                <button onclick="TSMonitor.toggleLogLevel('warn')" style="padding: 4px 8px; background: rgba(255,193,7,0.1); border: 1px solid #ffc107; color: #ffc107; cursor: pointer;">Warn</button>
+                <button onclick="TSMonitor.toggleLogLevel('error')" style="padding: 4px 8px; background: rgba(244,67,54,0.1); border: 1px solid #f44336; color: #f44336; cursor: pointer;">Error</button>
+            </div>
+            <div id="ts-monitor-debug-log-entries" style="max-height: 200px; overflow-y: auto; padding-right: 10px;">
+                <!-- Log entries will be appended here -->
+            </div>
         </div>
     `;
 
-    document.body.appendChild(debugElement);
+    // Wait for DOM to be ready before appending
+    const appendDebugElement = () => {
+        if (document.body) {
+            document.body.appendChild(debugElement);
 
-    const logObserver = new MutationObserver(() => {
-        const logElement = document.getElementById('ts-monitor-debug-log');
-        logElement.scrollTop = logElement.scrollHeight;
-    });
-    logObserver.observe(document.getElementById('ts-monitor-debug-log'), { childList: true, subtree: true });
+            const logObserver = new MutationObserver(() => {
+                const logElement = document.getElementById('ts-monitor-debug-log');
+                logElement.scrollTop = logElement.scrollHeight;
+            });
+            logObserver.observe(document.getElementById('ts-monitor-debug-log'), { childList: true, subtree: true });
 
-    // Update stats every second
-    setInterval(() => {
-        this.updateDebugStats();
-    }, 1000);
+            // Update stats every second
+            setInterval(() => {
+                this.updateDebugStats();
+            }, 1000);
+        } else {
+            requestAnimationFrame(appendDebugElement);
+        }
+    };
+
+    appendDebugElement();
 
     return debugElement;
 }
@@ -192,67 +254,61 @@ static updateDebugStats() {
 
     // Batch DOM updates
     requestAnimationFrame(() => {
-        elements.sessionId.textContent = utils.getSessionId();
-        elements.sessionDuration.textContent = `${sessionDuration}s`;
-        elements.userId.textContent =  TSMonitor.instance.userId || 'Not set';
-        elements.requestsSent.textContent = TSMonitor.instance.requestsSent || 0;
-        elements.eventsTracked.textContent = TSMonitor.instance.eventsTracked || 0;
-        elements.queueLength.textContent = TSMonitor.instance.requestQueue.length;
-        elements.avgRequestTime.textContent = `${TSMonitor.instance.avgRequestTime || 0}ms`;
-        elements.lastActivity.textContent = new Date(TSMonitor.instance.lastActivity).toISOString();
-        elements.sendFailures.textContent = TSMonitor.instance.sendRequestFailures;
-        elements.debugMode.textContent = config.isDebug ? 'Enabled' : 'Disabled';
-        elements.isRecording.textContent = TSMonitor.instance.isRecording ? 'Active' : 'Inactive';
-        elements.batchInterval.textContent = `${internalConfig.batchInterval}ms`;
-        elements.sessionDurationConfig.textContent = `${internalConfig.SESSION_DURATION}ms`;
-        elements.batchSize.textContent = TSMonitor.instance.lastBatchSize || 0;
-        elements.lastBatchTime.textContent = TSMonitor.instance.lastBatchTime ? new Date(TSMonitor.instance.lastBatchTime).toISOString() : 'N/A';
-        elements.pageViews.textContent = TSMonitor.instance.pageViews || 0;
-        elements.engagementScore.textContent = TSMonitor.instance.engagementScore || 0;
+        if (elements.sessionId) elements.sessionId.textContent = utils.getSessionId();
+        if (elements.sessionDuration) elements.sessionDuration.textContent = `${sessionDuration}s`;
+        if (elements.userId) elements.userId.textContent =  TSMonitor.instance.userId || 'Not set';
+        if (elements.requestsSent) elements.requestsSent.textContent = TSMonitor.instance.requestsSent || 0;
+        if (elements.eventsTracked) elements.eventsTracked.textContent = TSMonitor.instance.eventsTracked || 0;
+        if (elements.queueLength) elements.queueLength.textContent = TSMonitor.instance.requestQueue.length;
+        if (elements.avgRequestTime) elements.avgRequestTime.textContent = `${TSMonitor.instance.avgRequestTime || 0}ms`;
+        if (elements.lastActivity) elements.lastActivity.textContent = new Date(TSMonitor.instance.lastActivity).toISOString();
+        if (elements.sendFailures) elements.sendFailures.textContent = TSMonitor.instance.sendRequestFailures;
+        if (elements.debugMode) elements.debugMode.textContent = config.isDebug ? 'Enabled' : 'Disabled';
+        if (elements.isRecording) elements.isRecording.textContent = TSMonitor.instance.isRecording ? 'Active' : 'Inactive';
+        if (elements.batchInterval) elements.batchInterval.textContent = `${internalConfig.batchInterval}ms`;
+        if (elements.sessionDurationConfig) elements.sessionDurationConfig.textContent = `${internalConfig.SESSION_DURATION}ms`;
+        if (elements.batchSize) elements.batchSize.textContent = TSMonitor.instance.lastBatchSize || 0;
+        if (elements.lastBatchTime) elements.lastBatchTime.textContent = TSMonitor.instance.lastBatchTime ? new Date(TSMonitor.instance.lastBatchTime).toISOString() : 'N/A';
+        if (elements.pageViews) elements.pageViews.textContent = TSMonitor.instance.pageViews || 0;
+        if (elements.engagementScore) elements.engagementScore.textContent = TSMonitor.instance.engagementScore || 0;
 
         // Network info
         if (navigator.connection) {
-            elements.connectionType.textContent = navigator.connection.effectiveType || 'Unknown';
-            elements.effectiveBandwidth.textContent = navigator.connection.downlink ? `${navigator.connection.downlink} Mbps` : 'Unknown';
-            elements.rtt.textContent = navigator.connection.rtt ? `${navigator.connection.rtt} ms` : 'Unknown';
+            if (elements.connectionType) elements.connectionType.textContent = navigator.connection.effectiveType || 'Unknown';
+            if (elements.effectiveBandwidth) elements.effectiveBandwidth.textContent = navigator.connection.downlink ? `${navigator.connection.downlink} Mbps` : 'Unknown';
+            if (elements.rtt) elements.rtt.textContent = navigator.connection.rtt ? `${navigator.connection.rtt} ms` : 'Unknown';
         }
 
         // Browser info
-        elements.userAgent.textContent = navigator.userAgent;
-        elements.screenResolution.textContent = `${window.screen.width}x${window.screen.height}`;
-        elements.devicePixelRatio.textContent = window.devicePixelRatio || 1;
-        elements.browserLanguage.textContent = navigator.language || navigator.userLanguage;
-        elements.cookiesEnabled.textContent = navigator.cookieEnabled ? 'Yes' : 'No';
+        if (elements.userAgent) elements.userAgent.textContent = navigator.userAgent;
+        if (elements.screenResolution) elements.screenResolution.textContent = `${window.screen.width}x${window.screen.height}`;
+        if (elements.devicePixelRatio) elements.devicePixelRatio.textContent = window.devicePixelRatio || 1;
+        if (elements.browserLanguage) elements.browserLanguage.textContent = navigator.language || navigator.userLanguage;
+        if (elements.cookiesEnabled) elements.cookiesEnabled.textContent = navigator.cookieEnabled ? 'Yes' : 'No';
 
         // Performance metrics
         const perfEntries = performance.getEntriesByType('navigation');
         if (perfEntries.length > 0) {
             const perfEntry = perfEntries[0];
-            elements.loadTime.textContent = `${Math.round(perfEntry.loadEventEnd - perfEntry.navigationStart)}ms`;
-            elements.domContentLoaded.textContent = `${Math.round(perfEntry.domContentLoadedEventEnd - perfEntry.navigationStart)}ms`;
+            if (elements.loadTime) elements.loadTime.textContent = `${Math.round(perfEntry.loadEventEnd - perfEntry.navigationStart)}ms`;
+            if (elements.domContentLoaded) elements.domContentLoaded.textContent = `${Math.round(perfEntry.domContentLoadedEventEnd - perfEntry.navigationStart)}ms`;
         }
 
         // Paint metrics
         performance.getEntriesByType('paint').forEach(entry => {
             if (entry.name === 'first-paint') {
-                elements.firstPaint.textContent = `${Math.round(entry.startTime)}ms`;
+                if (elements.firstPaint) elements.firstPaint.textContent = `${Math.round(entry.startTime)}ms`;
             } else if (entry.name === 'first-contentful-paint') {
-                elements.firstContentfulPaint.textContent = `${Math.round(entry.startTime)}ms`;
+                if (elements.firstContentfulPaint) elements.firstContentfulPaint.textContent = `${Math.round(entry.startTime)}ms`;
             }
         });
 
         // Data transfer calculation
         const totalTransferred = performance.getEntriesByType('resource')
             .reduce((total, resource) => total + (resource.transferSize || 0), 0);
-        elements.dataTransferred.textContent = `${(totalTransferred / 1024).toFixed(2)} KB`;
+        if (elements.dataTransferred) elements.dataTransferred.textContent = `${(totalTransferred / 1024).toFixed(2)} KB`;
     });
 
-    // Async operations
-    utils.getLargestContentfulPaint().then(lcp => {
-        if (lcp && elements.largestContentfulPaint) {
-            elements.largestContentfulPaint.textContent = `${Math.round(lcp)}ms`;
-        }
-    });
 
     // IP address fetch (with debounce/throttle)
     if (!this.lastIpFetch || Date.now() - this.lastIpFetch > 60000) {
@@ -260,10 +316,10 @@ static updateDebugStats() {
         fetch('https://api.ipify.org?format=json')
             .then(response => response.json())
             .then(data => {
-                elements.ipAddress.textContent = utils.anonymize.ip(data.ip);
+                if (elements.ipAddress) elements.ipAddress.textContent = utils.anonymize.ip(data.ip);
             })
             .catch(() => {
-                elements.ipAddress.textContent = 'Unavailable';
+                if (elements.ipAddress) elements.ipAddress.textContent = 'Unavailable';
             });
     }
 }
@@ -275,23 +331,43 @@ static createToggleButton() {
         position: fixed;
         bottom: 10px;
         right: 10px;
-        padding: 8px 15px;
-        background: linear-gradient(45deg, #007bff, #00bcd4);
-        color: white;
-        border: none;
+        padding: 8px 16px;
+        background-color: rgba(0,0,0,0.8);
+        color: #00bcd4;
+        border: 1px solid #333;
         cursor: pointer;
         z-index: 10000;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        border-radius: 25px;
-        transition: all 0.3s ease;
-        font-weight: bold;
-        font-size: 14px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 12px;
+        transition: all 0.2s ease;
     `;
-    toggleButton.innerHTML = '🔍 Debug';
+    toggleButton.innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00bcd4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        Debug
+    `;
+
     toggleButton.onclick = this.handleToggleButtonClick;
-    toggleButton.onmouseover = () => { toggleButton.style.transform = 'scale(1.05)'; };
-    toggleButton.onmouseout = () => { toggleButton.style.transform = 'scale(1)'; };
-    document.body.appendChild(toggleButton);
+    toggleButton.onmouseover = () => {
+        toggleButton.style.backgroundColor = 'rgba(0,0,0,0.9)';
+    };
+    toggleButton.onmouseout = () => {
+        toggleButton.style.backgroundColor = 'rgba(0,0,0,0.8)';
+    };
+
+    const appendToggleButton = () => {
+        if (document.body) {
+            document.body.appendChild(toggleButton);
+        } else {
+            requestAnimationFrame(appendToggleButton);
+        }
+    };
+
+    appendToggleButton();
 
     return toggleButton;
 }
@@ -315,10 +391,108 @@ static updateDebugElementVisibility(debugElement, visible) {
 
 static updateToggleButtonState(toggleButton, visible) {
     toggleButton.textContent = visible ? '🔽 Hide Debug' : '🔼 Show Debug';
-    toggleButton.style.background = visible ? 'linear-gradient(45deg, #28a745, #20c997)' : 'linear-gradient(45deg, #007bff, #00bcd4)';
+    toggleButton.style.color = visible ? '#00bcd4' : '#00bcd4';
+    toggleButton.style.borderColor = visible ? '#00bcd4' : '#333';
 }
 
-static logDebugInfo() {
-    this.updateDebugStats();
-    utils.debugLog('Debug info updated');
+static logDebugInfo(message, level = 'info') {
+    // Auto-detect level if not provided
+    if (level === 'info') {
+        const lowerMessage = message.toLowerCase();
+        if (lowerMessage.includes('error') || lowerMessage.includes('failed') || lowerMessage.includes('exception')) {
+            level = 'error';
+        } else if (lowerMessage.includes('warning') || lowerMessage.includes('deprecated') || lowerMessage.includes('caution')) {
+            level = 'warn';
+        } else if (lowerMessage.includes('success') || lowerMessage.includes('completed') || lowerMessage.includes('finished')) {
+            level = 'info';
+        }
+    }
+
+    const logEntry = document.createElement('div');
+    const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+
+    // Check if message is JSON or JSON-like string
+    let formattedMessage = message;
+    try {
+        if (typeof message === 'string' && (message.startsWith('{') || message.startsWith('['))) {
+            const jsonObj = JSON.parse(message);
+            formattedMessage = `<pre style="margin: 0; white-space: pre-wrap; word-wrap: break-word;">${JSON.stringify(jsonObj, null, 2)}</pre>`;
+        } else if (typeof message === 'object') {
+            formattedMessage = `<pre style="margin: 0; white-space: pre-wrap; word-wrap: break-word;">${JSON.stringify(message, null, 2)}</pre>`;
+        }
+    } catch (e) {
+        // Not JSON, use original message
+    }
+
+    // Set styles based on level
+    const levelStyles = {
+        error: {
+            background: 'rgba(244,67,54,0.1)',
+            borderColor: '#f44336',
+            color: '#f44336'
+        },
+        warn: {
+            background: 'rgba(255,193,7,0.1)',
+            borderColor: '#ffc107',
+            color: '#ffc107'
+        },
+        info: {
+            background: 'rgba(0,188,212,0.1)',
+            borderColor: '#00bcd4',
+            color: '#00bcd4'
+        }
+    };
+
+    logEntry.style.cssText = `
+        padding: 6px 8px;
+        margin: 4px 0;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 12px;
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+        background: ${levelStyles[level].background};
+        border-left: 3px solid ${levelStyles[level].borderColor};
+        color: ${levelStyles[level].color};
+    `;
+
+    logEntry.dataset.level = level;
+
+    logEntry.innerHTML = `
+        <span style="color: #666; min-width: 60px;">${timestamp}</span>
+        <div style="flex: 1; overflow-x: auto;">${formattedMessage}</div>
+    `;
+
+    const logContainer = document.getElementById('ts-monitor-debug-log-entries');
+    if (logContainer) {
+        logContainer.appendChild(logEntry);
+        logContainer.scrollTop = logContainer.scrollHeight;
+    }
+}
+
+static clearDebugLog() {
+    const logContainer = document.getElementById('ts-monitor-debug-log-entries');
+    if (logContainer) {
+        logContainer.innerHTML = '';
+    }
+}
+
+static toggleLogLevel(level) {
+    const logEntries = document.querySelectorAll('#ts-monitor-debug-log-entries > div');
+    logEntries.forEach(entry => {
+        const entryLevel = entry.dataset.level || 'info';
+        entry.style.display = (level === 'all' || entryLevel === level) ? 'flex' : 'none';
+    });
+}
+
+static debugLog(message, level = 'info') {
+    this.logDebugInfo(message, level);
+    if (level === 'error') {
+        console.error(message);
+    } else if (level === 'warn') {
+        console.warn(message);
+    } else {
+        console.log(message);
+    }
 }

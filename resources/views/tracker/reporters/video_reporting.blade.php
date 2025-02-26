@@ -13,7 +13,7 @@ trackVideoWatching() {
                             videoSrc: videoElement.src
                         }
                     });
-                    utils.debugLog('Video watch time updated:', this.videoWatchTime, 'seconds');
+                    utils.debugInfo('Video watch time updated:', this.videoWatchTime, 'seconds');
                 }
             };
             const intervalId = setInterval(updateWatchTime, 1000);
@@ -48,7 +48,7 @@ trackMediaErrors() {
                     }
                 }
             });
-            utils.debugLog('Media error tracked:', mediaElement.error);
+            utils.debugError('Media error tracked:', mediaElement.error);
         }
     }, true);
 }

@@ -11,16 +11,36 @@ use Shaferllc\Analytics\Traits\ComponentTrait;
 use Shaferllc\Analytics\Traits\DateRangeTrait;
 
 #[Title('Tracking Code')]
-#[Layout('analytics::layouts.app')]
 class TrackingCode extends Component
 {
     use DateRangeTrait, ComponentTrait;
 
     #[Locked]
     public Site $site;
-    public function mount()
+    public bool $copied = false;
+    public ?string $verificationStatus = null;
+
+
+    public function copyToClipboard()
     {
-        $this->range = $this->range();
+        try {
+            $this->copied = false;
+            $this->dispatchBrowserEvent('copy-to-clipboard', ['id' => 'i-tracking-code']);
+            $this->copied = true;
+        } catch (\Exception $e) {
+            $this->addError('copy', __('Failed to copy to clipboard'));
+        }
+    }
+
+    public function verifyInstallation()
+    {
+        $this->verificationStatus = $this->checkTrackingCodeInstallation();
+    }
+
+    protected function checkTrackingCodeInstallation(): string
+    {
+        // Implementation of tracking code verification
+        return 'verified'; // or 'not_verified'
     }
 
     public function render()

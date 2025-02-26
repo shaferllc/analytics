@@ -68,7 +68,7 @@ trackWordPressInteractions() {
                     }
                 });
 
-                utils.debugLog('WordPress editor analytics:', {
+                utils.debugInfo('WordPress editor analytics:', {
                     operations: blockOperations,
                     avgEditDuration: Math.round(avgEditingDuration / 1000) + 's'
                 });

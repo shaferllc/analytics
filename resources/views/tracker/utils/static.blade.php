@@ -9,7 +9,7 @@ static trackEvent(eventName, eventData) {
             eventData: utils.sanitizeEventData(eventData)
         }
     });
-    utils.debugLog('Custom event tracked:', eventName, eventData);
+    utils.debugInfo('Custom event tracked:', eventName, eventData);
 }
 
 static abTest(testName, variants) {
@@ -35,7 +35,7 @@ static setUserId(id) {
                 userId: utils.hashUserId(id)
             }
         });
-        utils.debugLog('User ID set:', id);
+        utils.debugInfo('User ID set:', id);
 }
 
     static startRecording() {
@@ -43,7 +43,7 @@ static setUserId(id) {
         TSMonitor.instance.isRecording = true;
         document.addEventListener('click', TSMonitor.instance.recordEvent);
         document.addEventListener('input', TSMonitor.instance.recordEvent);
-        utils.debugLog('Session recording started');
+        utils.debugInfo('Session recording started');
     }
 }
 
@@ -57,7 +57,7 @@ static stopRecording() {
             value: TSMonitor.instance.recordedEvents
         });
         TSMonitor.instance.recordedEvents.length = 0; // Clear the array
-        utils.debugLog('Session recording stopped and data sent');
+        utils.debugInfo('Session recording stopped and data sent');
     }
 }
 
@@ -66,7 +66,7 @@ static setUserProperties(properties) {
             name: 'set_user_properties',
             value: utils.sanitizeEventData(properties)
         });
-        utils.debugLog('User properties set:', properties);
+        utils.debugInfo('User properties set:', properties);
 }
 
 static trackPageView(pageTitle, pageUrl) {
@@ -77,7 +77,7 @@ static trackPageView(pageTitle, pageUrl) {
                 url: utils.anonymize.url(pageUrl || window.location.href)
             }
         });
-        utils.debugLog('Page view tracked:', pageTitle, pageUrl);
+        utils.debugInfo('Page view tracked:', pageTitle, pageUrl);
 }
 
 static trackError(errorMessage, errorDetails) {
@@ -88,7 +88,7 @@ static trackError(errorMessage, errorDetails) {
                 details: errorDetails
             }
         });
-        utils.debugLog('Error tracked:', errorMessage, errorDetails);
+        utils.debugInfo('Error tracked:', errorMessage, errorDetails);
 }
 static clearUserData() {
         TSMonitor.instance.userId = null;
@@ -99,7 +99,7 @@ static clearUserData() {
             name: 'clear_user_data',
             value: { timestamp: new Date().toISOString() }
         });
-        utils.debugLog('User data cleared');
+        utils.debugInfo('User data cleared');
 }
 
 static setCustomDimension(dimensionName, value) {
@@ -110,7 +110,7 @@ static setCustomDimension(dimensionName, value) {
                 value: value
             }
         });
-        utils.debugLog('Custom dimension set:', dimensionName, value);
+        utils.debugInfo('Custom dimension set:', dimensionName, value);
 }
 
 static trackTiming(category, variable, time, label) {
@@ -123,7 +123,7 @@ static trackTiming(category, variable, time, label) {
                 label: label
             }
         });
-        utils.debugLog('Timing tracked:', category, variable, time, label);
+        utils.debugInfo('Timing tracked:', category, variable, time, label);
 }
 
 static getConfig() {
@@ -132,7 +132,7 @@ static getConfig() {
 
 static updateConfig(newConfig) {
     Object.assign(config, newConfig);
-    utils.debugLog('Config updated:', config);
+    utils.debugInfo('Config updated:', config);
 }
 
 static getSessionId() {

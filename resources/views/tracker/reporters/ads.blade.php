@@ -94,7 +94,7 @@ trackAdClicks() {
             }
 
             this.queueRequest(adData);
-            utils.debugLog('Ad click tracked:', adData.value);
+            utils.debbugInfo('Ad click tracked:', adData.value);
         }
     });
 
@@ -680,7 +680,7 @@ detectAdNetwork(adElement) {
     };
 
     // Log the additional identifiers for debugging
-    utils.debugLog('Additional ad identifiers:', adIdentifiers);
+    utils.debugInfo('Additional ad identifiers:', adIdentifiers);
 
     return 'unknown';
 }

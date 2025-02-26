@@ -71,7 +71,7 @@ trackTabVisibility() {
                     url: window.location.href
                 }
             });
-            utils.debugLog('Tab visibility tracked:', {
+            utils.debugInfo('Tab visibility tracked:', {
                 switches: tabSwitches,
                 totalHiddenTime: Math.round(totalHiddenTime / 1000) + 's'
             });

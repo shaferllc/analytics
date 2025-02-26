@@ -46,7 +46,7 @@ trackGeolocationErrors() {
                         userAgent: navigator.userAgent
                     }
                 });
-                utils.debugLog('Geolocation error tracked:', error);
+                utils.debugError('Geolocation error tracked:', error);
             }
         );
     }

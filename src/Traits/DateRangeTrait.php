@@ -58,6 +58,39 @@ trait DateRangeTrait
     }
 
     /**
+     * Set the time range based on shorthand format (e.g. 7d, 30d, 90d)
+     */
+    public function setTimeRange(string $range): void
+    {
+        $this->daterange = $range;
+
+        if ($range === 'today') {
+            $this->range(now()->startOfDay(), now());
+            return;
+        }
+
+        // Extract number and unit from range string
+        preg_match('/(\d+)([a-z])/', $range, $matches);
+
+        if (count($matches) === 3) {
+            $number = (int)$matches[1];
+            $unit = $matches[2];
+
+            $to = now();
+
+            $from = match($unit) {
+                'h' => now()->subHours($number),
+                'd' => now()->subDays($number),
+                'w' => now()->subWeeks($number),
+                'm' => now()->subMonths($number),
+                'y' => now()->subYears($number),
+                default => now()->subDays($number)
+            };
+
+            $this->range($from, $to);
+        }
+    }
+    /**
      * Calculate all the possible dates between two time frames.
      *
      * @param  mixed  $output

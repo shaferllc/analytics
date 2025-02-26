@@ -7,11 +7,11 @@ trackExitRate() {
     // Increment total pageviews on page load
     totalPageviews++;
     lastPageUrl = window.location.href;
-    utils.debugLog('Page loaded, total pageviews:', totalPageviews);
+    utils.debugInfo('Page loaded, total pageviews:', totalPageviews);
 
     // Track exit on page unload
     window.addEventListener('beforeunload', (event) => {
-        utils.debugLog('beforeunload event detected');
+        utils.debugInfo('beforeunload event detected');
         exitPageviews++;
 
         const timeOnPage = Date.now() - sessionStartTime;
@@ -34,7 +34,7 @@ trackExitRate() {
 
         // Queue the exit data
         this.queueRequest(exitData);
-        utils.debugLog('Exit rate data queued:', exitData);
+        utils.debugInfo('Exit rate data queued:', exitData);
 
         // Force process batched requests
         this.processBatchedRequests(true);
@@ -53,7 +53,7 @@ trackExitRate() {
                 exitRateRequests.forEach(request => {
                     this.queueRequest(request.events[0]);
                 });
-                utils.debugLog(`Processed ${exitRateRequests.length} stored exit rate requests`);
+                utils.debugInfo(`Processed ${exitRateRequests.length} stored exit rate requests`);
 
                 // Remove processed requests
                 localStorage.setItem('ts_monitor_offline_requests',
@@ -63,7 +63,7 @@ trackExitRate() {
                 );
             }
         } catch (error) {
-            utils.debugLog('Error processing stored exit rate data:', error);
+            utils.debugInfo('Error processing stored exit rate data:', error);
         }
     }
 
@@ -74,13 +74,13 @@ trackExitRate() {
         totalPageviews++;
         lastPageUrl = window.location.href;
         sessionStartTime = Date.now();
-        utils.debugLog('pushState called, total pageviews:', totalPageviews);
+        utils.debugInfo('pushState called, total pageviews:', totalPageviews);
     };
 
     window.addEventListener('popstate', () => {
         totalPageviews++;
         lastPageUrl = window.location.href;
         sessionStartTime = Date.now();
-        utils.debugLog('popstate event, total pageviews:', totalPageviews);
+        utils.debugInfo('popstate event, total pageviews:', totalPageviews);
     });
 }

@@ -1,105 +1,250 @@
-<x-website :website="$site">
-    <div class="space-y-4">
-        <x-analytics::breadcrumbs :breadcrumbs="[
-            [
-                'url' => route('websites.analytics.overview', ['website' => $site->id]),
-                'label' => __('Dashboard'),
-            ],
-            [
-                'url' => route('websites.analytics.geographic', ['website' => $site->id]),
-                'label' => __('Geographic'),
-            ],
-            [
-                'url' => route('websites.analytics.cities', ['website' => $site->id]),
-                'label' => __('Cities'),
-            ]
+<x-site :site="$site">
+    <div class="space-y-8">
+        <x-breadcrumbs :breadcrumbs="[
+            ['url' => route('sites.analytics.overview', ['site' => $site->id]), 'label' => __('Analytics Dashboard')],
+            ['url' => route('sites.analytics.cities', ['site' => $site->id]), 'label' => __('Cities'), 'icon' => 'heroicon-o-map']
         ]" />
-        @include('analytics::livewire.partials.nav')
 
-        <x-analytics::title
-            :title="__('Cities')"
-            :description="__('Cities where your website is being accessed from.')"
-            :totalPageviews="$total"
-            :icon="'heroicon-o-building-office-2'"
-            :totalText="__('Total Cities')"
-            :data="$data"
-            :total="$total"
-            :first="$first"
-            :last="$last"
-            :website="$site"
-            :daterange="$daterange"
-            :perPage="$perPage"
-            :sortBy="$sortBy"
-            :sort="$sort"
-            :from="$from"
-            :sortWords="['count' => __('Pageviews'), 'value' => __('City')]"
-            :to="$to"
-            :search="$search"
-        />
+        <div class="flex justify-end gap-4">
+            <x-ts-dropdown position="bottom-end">
+                <x-slot:action>
+                    <x-ts-button x-on:click="show = !show" sm>{{ __('Time Range') }}</x-ts-button>
+                </x-slot:action>
+                <x-ts-dropdown.items wire:click="setTimeRange('today')" :active="$daterange === 'today'">{{ __('Today') }}</x-ts-dropdown.item>
+                <x-ts-dropdown.items wire:click="setTimeRange('7d')" :active="$daterange === '7d'">{{ __('Last 7 Days') }}</x-ts-dropdown.item>
+                <x-ts-dropdown.items wire:click="setTimeRange('30d')" :active="$daterange === '30d'">{{ __('Last 30 Days') }}</x-ts-dropdown.item>
+                <x-ts-dropdown.items wire:click="setTimeRange('90d')" :active="$daterange === '90d'">{{ __('Last 90 Days') }}</x-ts-dropdown.item>
+            </x-ts-dropdown>
 
-        <div>
-            @if(count($data) == 0)
-                <x-analytics::no-results />
-            @else
-                <div x-data="{ view: '{{ $display }}' }" class="space-y-4">
-                    <x-analytics::view-switcher :data="$data" color="purple" />
+            <x-ts-button wire:click="exportData" sm>
+                <x-icon name="heroicon-o-arrow-down-tray" class="w-4 h-4 mr-2" />
+                {{ __('Export') }}
+            </x-ts-button>
+        </div>
 
-                    <x-analytics::view view="list" color="purple" class="bg-gradient-to-br from-purple-900 to-purple-950 rounded-xl shadow-lg border border-purple-800 p-6 backdrop-blur-xl">
-                        <div class="flex flex-col space-y-6">
-                            @foreach($data as $city)
-                                <div class="flex items-center space-x-4 group hover:bg-purple-800/20 p-4 rounded-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-lg border border-purple-800">
-                                    <div class="flex-1">
-                                        <div class="relative">
-                                            <div class="text-sm text-purple-100 mb-2">
-                                                <div class="flex items-center justify-between">
-                                                    <div class="flex flex-col">
-                                                        <div class="flex items-center space-x-2">
-                                                            <x-tooltip :text="$city->value ?: __('Unknown')" class="group-hover:opacity-100">
-                                                                <span class="font-medium bg-gradient-to-r from-purple-200 to-purple-100 bg-clip-text text-transparent">
-                                                                    <x-icon name="heroicon-o-building-office-2" class="w-4 h-4 inline mr-1" />
-                                                                    {{ $city->value ?: __('Unknown') }}
-                                                                </span>
-                                                            </x-tooltip>
-                                                        </div>
-                                                        <div class="flex items-center space-x-2 mt-1">
-                                                            <x-tooltip :text="__('First seen')" class="group-hover:opacity-100">
-                                                                <span class="text-xs text-purple-400 hover:text-purple-300 transition-colors">
-                                                                    <x-icon name="heroicon-o-clock" class="w-3 h-3 inline mr-1" />
-                                                                    {{ $city->created_at->diffForHumans() }}
-                                                                </span>
-                                                            </x-tooltip>
-                                                            <x-tooltip :text="__('Last seen')" class="group-hover:opacity-100">
-                                                                <span class="text-xs text-purple-400 hover:text-purple-300 transition-colors">
-                                                                    <x-icon name="heroicon-o-arrow-path" class="w-3 h-3 inline mr-1" />
-                                                                    {{ $city->updated_at->diffForHumans() }}
-                                                                </span>
-                                                            </x-tooltip>
-                                                        </div>
-                                                    </div>
-                                                </div>
+        <div class="grid grid-cols-1 gap-4">
+            <div class="relative bg-white/90 dark:bg-slate-800/90 rounded-2xl shadow-lg border border-slate-200/60 dark:border-slate-700/60 p-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Basic Stats -->
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-emerald-50 dark:bg-emerald-800/20 rounded-lg">
+                                <x-icon name="heroicon-o-map" class="w-6 h-6 text-emerald-500" />
+                            </div>
+                            <div>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('Total Cities') }}</p>
+                                <p class="text-xl font-semibold text-emerald-600 dark:text-emerald-400">
+                                    {{ number_format($aggregates['total_categories']) }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex justify-between text-sm items-center">
+                            <span class="text-slate-500 flex items-center gap-2">
+                                <x-icon name="heroicon-o-users" class="w-4 h-4 text-blue-500" />
+                                {{ __('Unique Visitors') }}:
+                            </span>
+                            <span class="font-medium text-blue-600 dark:text-blue-400">{{ number_format($aggregates['unique_visitors']) }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm items-center">
+                            <span class="text-slate-500 flex items-center gap-2">
+                                <x-icon name="heroicon-o-arrow-path" class="w-4 h-4 text-purple-500" />
+                                {{ __('Total Visits') }}:
+                            </span>
+                            <span class="font-medium text-purple-600 dark:text-purple-400">{{ number_format($aggregates['total_visits']) }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Engagement Metrics -->
+                    <div class="space-y-2">
+                        <h3 class="font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                            <x-icon name="heroicon-o-chart-bar" class="w-5 h-5 text-indigo-500" />
+                            {{ __('Engagement') }}
+                        </h3>
+                        <div class="flex justify-between text-sm items-center">
+                            <span class="text-slate-500 flex items-center gap-2">
+                                <x-icon name="heroicon-o-arrow-trending-up" class="w-4 h-4 text-sky-500" />
+                                {{ __('Avg Visits/City') }}:
+                            </span>
+                            <span class="font-medium text-sky-600 dark:text-sky-400">{{ number_format($aggregates['average_visits_per_visitor'], 1) }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm items-center">
+                            <span class="text-slate-500 flex items-center gap-2">
+                                <x-icon name="heroicon-o-arrow-uturn-left" class="w-4 h-4 text-teal-500" />
+                                {{ __('Retention Rate') }}:
+                            </span>
+                            <span class="font-medium text-teal-600 dark:text-teal-400">{{ number_format($aggregates['visitor_retention_rate'], 1) }}%</span>
+                        </div>
+                    </div>
+
+                    <!-- Visit Distribution -->
+                    <div class="space-y-2">
+                        <h3 class="font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                            <x-icon name="heroicon-o-chart-pie" class="w-5 h-5 text-rose-500" />
+                            {{ __('Visit Patterns') }}
+                        </h3>
+                        <div class="flex justify-between text-sm items-center">
+                            <span class="text-slate-500 flex items-center gap-2">
+                                <x-icon name="heroicon-o-map-pin" class="w-4 h-4 text-red-500" />
+                                {{ __('Single Visit Cities') }}:
+                            </span>
+                            <span class="font-medium text-red-600 dark:text-red-400">{{ number_format($aggregates['categories_with_single_visit']) }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm items-center">
+                            <span class="text-slate-500 flex items-center gap-2">
+                                <x-icon name="heroicon-o-globe-alt" class="w-4 h-4 text-orange-500" />
+                                {{ __('Multiple Visit Cities') }}:
+                            </span>
+                            <span class="font-medium text-orange-600 dark:text-orange-400">{{ number_format($aggregates['categories_with_multiple_visits']) }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Metrics -->
+                    <div class="space-y-2">
+                        <h3 class="font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                            <x-icon name="heroicon-o-beaker" class="w-5 h-5 text-fuchsia-500" />
+                            {{ __('Advanced Metrics') }}
+                        </h3>
+                        <div class="flex justify-between text-sm items-center">
+                            <span class="text-slate-500 flex items-center gap-2">
+                                <x-icon name="heroicon-o-variable" class="w-4 h-4 text-pink-500" />
+                                {{ __('Diversity Index') }}:
+                            </span>
+                            <span class="font-medium text-pink-600 dark:text-pink-400">{{ number_format($aggregates['category_diversity_index'], 2) }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm items-center">
+                            <span class="text-slate-500 flex items-center gap-2">
+                                <x-icon name="heroicon-o-clock" class="w-4 h-4 text-lime-500" />
+                                {{ __('Active Hours/Day') }}:
+                            </span>
+                            <span class="font-medium text-lime-600 dark:text-lime-400">{{ number_format($aggregates['average_active_hours'] ?? 0, 1) }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <x-loading />
+        @if($cities->isNotEmpty())
+            <div class="space-y-6">
+                <div class="relative bg-white/90 dark:bg-slate-800/90 rounded-2xl shadow-lg border border-slate-200/60 dark:border-slate-700/60 p-6 overflow-hidden" x-data="{ isOpen: true }">
+                    <div class="cursor-pointer" @click="isOpen = !isOpen">
+                        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                            <div class="space-y-2 flex-initial">
+                                <div class="flex items-center gap-4">
+                                    <div class="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
+                                        <x-icon name="heroicon-o-map" class="w-6 h-6 text-emerald-500" />
+                                    </div>
+                                    <div>
+                                        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
+                                            {{ __('Cities') }}
+                                        </h2>
+                                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                                            {{ __('Detailed Insights Into Visitor Locations') }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-2 p-2 hover:bg-slate-100/50 dark:hover:bg-slate-700/20 rounded-lg transition-colors">
+                                <div>
+                                    <template x-if="isOpen">
+                                        <x-icon name="heroicon-o-chevron-up" class="w-6 h-6 text-slate-400 bg-slate-100/50 dark:bg-slate-500/20 rounded-lg p-1"  />
+                                    </template>
+                                    <template x-if="!isOpen">
+                                        <x-icon name="heroicon-o-chevron-down" class="w-6 h-6 text-slate-400 bg-slate-100/50 dark:bg-slate-500/20 rounded-lg p-1" />
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div x-show="isOpen" x-collapse>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                            @foreach($cities as $city)
+                                <div class="relative bg-slate-50/50 dark:bg-slate-700/20 rounded-xl p-6" x-data="{ showDetails: false }">
+                                    <div class="flex justify-between items-start mb-4">
+                                        <div class="flex items-center gap-3">
+                                            <x-icon name="heroicon-o-map-pin" class="w-6 h-6 text-slate-400" />
+                                            <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ $city['value'] }}</span>
+                                        </div>
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-800/30 dark:text-emerald-200">
+                                            {{ number_format($city['unique_visitors']) }} {{ __('Users') }}
+                                        </span>
+                                    </div>
+
+                                    <!-- Basic Stats - Always Visible -->
+                                    <div class="grid grid-cols-2 gap-4 text-sm mb-4">
+                                        <div>
+                                            <p class="text-slate-500 dark:text-slate-400">{{ __('First Seen') }}</p>
+                                            <p class="font-medium text-slate-700 dark:text-slate-300">{{ Carbon\Carbon::parse($city['first_seen'])->format('M j, Y') }}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-slate-500 dark:text-slate-400">{{ __('Last Seen') }}</p>
+                                            <p class="font-medium text-slate-700 dark:text-slate-300">{{ Carbon\Carbon::parse($city['last_seen'])->format('M j, Y') }}</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Show More Button -->
+                                    <button
+                                        @click="showDetails = !showDetails"
+                                        class="w-full py-2 px-4 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-700/50 rounded-lg transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <span x-text="showDetails ? '{{ __('Show Less') }}' : '{{ __('Show More') }}'"></span>
+                                        <x-icon
+                                            :name="'heroicon-o-chevron-down'"
+                                            class="w-4 h-4 transition-transform"
+                                            ::class="showDetails ? 'rotate-180' : ''"
+                                        />
+                                    </button>
+
+                                    <!-- Detailed Content -->
+                                    <div x-show="showDetails" x-collapse class="mt-4 space-y-4">
+                                        <!-- Visit Days and Percentage -->
+                                        <div class="grid grid-cols-2 gap-4 text-sm">
+                                            <div>
+                                                <p class="text-slate-500 dark:text-slate-400">{{ __('Visit Days') }}</p>
+                                                <p class="font-medium text-slate-700 dark:text-slate-300">{{ number_format($city['visit_days']) }}</p>
                                             </div>
-                                            <div class="flex flex-col space-y-1">
-                                                <div class="overflow-hidden h-2 text-xs flex rounded-lg bg-purple-700/30">
-                                                    <div style="width: {{ $aggregates['total_count'] > 0 ? ($city->count / $aggregates['total_count']) * 100 : 0 }}%"
-                                                        class="shadow-lg bg-gradient-to-r from-purple-400 to-purple-600 transition-all duration-300 hover:from-purple-300 hover:to-purple-500">
+                                            <div>
+                                                <p class="text-slate-500 dark:text-slate-400">{{ __('Percentage') }}</p>
+                                                <p class="font-medium text-slate-700 dark:text-slate-300">{{ number_format($city['percentage'], 1) }}%</p>
+                                            </div>
+                                        </div>
+
+                                        <!-- Visitor Stats -->
+                                        <div class="border-t border-slate-200 dark:border-slate-700 pt-4">
+                                            <div class="grid grid-cols-3 gap-4">
+                                                <div>
+                                                    <div class="flex items-start space-x-3">
+                                                        <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                                                            <x-icon name="heroicon-o-users" class="w-5 h-5 text-blue-500 dark:text-blue-400"/>
+                                                        </div>
+                                                        <div>
+                                                            <p class="text-slate-500 dark:text-slate-400 text-xs">{{ __('Unique Visitors') }}</p>
+                                                            <p class="font-semibold text-slate-800 dark:text-slate-200 mt-0.5">{{ number_format($city['unique_visitor_count']) }}</p>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <div class="flex justify-between text-xs text-purple-300">
-                                                    <div class="flex space-x-4">
-                                                        <x-tooltip :text="__('Total pageviews from this city')" class="group-hover:opacity-100">
-                                                            <span class="hover:text-purple-200 transition-colors">
-                                                                <x-icon name="heroicon-o-eye" class="w-3 h-3 inline mr-1" />
-                                                                {{ number_format($city->count, 0, __('.'), __(',')) }} {{ __('pageviews') }}
-                                                            </span>
-                                                        </x-tooltip>
+                                                <div>
+                                                    <div class="flex items-start space-x-3">
+                                                        <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-900/20">
+                                                            <x-icon name="heroicon-o-arrow-path" class="w-5 h-5 text-emerald-500 dark:text-emerald-400"/>
+                                                        </div>
+                                                        <div>
+                                                            <p class="text-slate-500 dark:text-slate-400 text-xs">{{ __('Total Visits') }}</p>
+                                                            <p class="font-semibold text-slate-800 dark:text-slate-200 mt-0.5">{{ number_format($city['total_visits']) }}</p>
+                                                        </div>
                                                     </div>
-                                                    <div class="flex space-x-4">
-                                                        <x-tooltip :text="__('Percentage of total pageviews')" class="group-hover:opacity-100">
-                                                            <span class="hover:text-purple-200 transition-colors">
-                                                                <x-icon name="heroicon-o-chart-pie" class="w-3 h-3 inline mr-1" />
-                                                                {{ $aggregates['total_count'] > 0 ? number_format(($city->count / $aggregates['total_count']) * 100, 1) : 0 }}% {{ __('of pageviews') }}
-                                                            </span>
-                                                        </x-tooltip>
+                                                </div>
+                                                <div>
+                                                    <div class="flex items-start space-x-3">
+                                                        <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-purple-50 dark:bg-purple-900/20">
+                                                            <x-icon name="heroicon-o-chart-bar" class="w-5 h-5 text-purple-500 dark:text-purple-400"/>
+                                                        </div>
+                                                        <div>
+                                                            <p class="text-slate-500 dark:text-slate-400 text-xs">{{ __('Visits/Visitor') }}</p>
+                                                            <p class="font-semibold text-slate-800 dark:text-slate-200 mt-0.5">{{ number_format($city['visits_per_visitor'], 1) }}</p>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -108,107 +253,22 @@
                                 </div>
                             @endforeach
                         </div>
-                    </x-analytics::view>
 
-                    <x-analytics::view view="compact" color="purple" class="overflow-hidden rounded-xl border border-purple-800">
-                        <table class="min-w-full divide-y divide-purple-800">
-                            <thead class="bg-purple-900">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-purple-300 uppercase tracking-wider">{{ __('City') }}</th>
-                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-purple-300 uppercase tracking-wider">{{ __('Pageviews') }}</th>
-                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-purple-300 uppercase tracking-wider">{{ __('Percentage') }}</th>
-                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-purple-300 uppercase tracking-wider">{{ __('Graph') }}</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-purple-950 divide-y divide-purple-800">
-                                @foreach($data as $city)
-                                    <tr class="hover:bg-purple-900/50 transition-colors duration-150">
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                <x-tooltip :text="$city->value ?: __('Unknown')">
-                                                    <div class="text-sm font-medium text-purple-100 max-w-xs truncate">
-                                                        <x-icon name="heroicon-o-building-office-2" class="w-4 h-4 inline mr-2 text-purple-400" />
-                                                        {{ Str::limit($city->value, 90) ?: __('Unknown') }}
-                                                    </div>
-                                                </x-tooltip>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-purple-100">
-                                            <x-icon name="heroicon-o-eye" class="w-4 h-4 inline mr-1 text-purple-400" />
-                                            {{ number_format($city->count, 0, __('.'), __(',')) }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-purple-100">
-                                            <x-icon name="heroicon-o-chart-pie" class="w-4 h-4 inline mr-1 text-purple-400" />
-                                            {{ number_format(($city->count / $aggregates['total_count']) * 100, 1) }}%
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <x-tooltip :text="number_format($city->count) . ' ' . __('pageviews')">
-                                                <div class="w-32 h-2 text-xs flex rounded-full ml-auto bg-purple-700/30">
-                                                    <div style="width: {{ ($city->count / $aggregates['total_count']) * 100 }}%"
-                                                        class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r from-purple-400 to-purple-600 rounded-full">
-                                                    </div>
-                                                </div>
-                                            </x-tooltip>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </x-analytics::view>
-
-                    <x-analytics::view view="cards" color="purple" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        @foreach($data as $city)
-                            <div class="group bg-gradient-to-br from-purple-900 to-purple-950 rounded-xl shadow-lg border border-purple-800 p-6 hover:shadow-xl transition-all duration-300">
-                                <div class="flex items-center justify-between mb-4">
-                                    <div class="flex-shrink-0">
-                                        <div class="relative">
-                                            <div class="absolute inset-0 bg-purple-800/20 blur-xl rounded-full group-hover:bg-purple-700/30 transition-colors duration-300"></div>
-                                            <x-tooltip :text="__('City') . ': ' . $city->value">
-                                                <div class="relative bg-gradient-to-br from-purple-700 to-purple-900 p-3 rounded-full group-hover:from-purple-600 group-hover:to-purple-800 transition-colors duration-300">
-                                                    <x-icon name="heroicon-o-building-office-2" class="w-6 h-6 text-purple-200 group-hover:animate-spin-slow" />
-                                                </div>
-                                            </x-tooltip>
-                                        </div>
-                                    </div>
-                                    <div class="text-right">
-                                        <x-tooltip :text="number_format($city->count) . ' ' . __('pageviews from') . ' ' . $city->value . ' - ' . number_format(($city->count / $aggregates['total_count']) * 100, 1) . '% ' . __('of total traffic')">
-                                            <span class="text-2xl font-bold text-purple-100 group-hover:text-white transition-colors duration-300">
-                                                <x-icon name="heroicon-o-eye" class="w-6 h-6 inline mr-2" />
-                                                {{ number_format($city->count, 0, __('.'), __(',')) }}
-                                            </span>
-                                        </x-tooltip>
-                                        <p class="text-purple-300 text-sm group-hover:text-purple-200 transition-colors duration-300">{{ __('Pageviews') }}</p>
-                                    </div>
-                                </div>
-                                <div class="mb-4">
-                                    <h3 class="text-lg font-semibold text-purple-100 mb-1 group-hover:text-white transition-colors duration-300">
-                                        {{ $city->value ?: __('Unknown') }}
-                                    </h3>
-                                    <x-tooltip :text="number_format($city->count) . ' ' . __('pageviews')">
-                                        <div class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-700/50 text-purple-200 group-hover:bg-purple-600/50 group-hover:text-white transition-all duration-300">
-                                            <x-icon name="heroicon-o-chart-pie" class="w-3 h-3 inline mr-1" />
-                                            {{ number_format(($city->count / $aggregates['total_count']) * 100, 1) }}% {{ __('of total') }}
-                                        </div>
-                                    </x-tooltip>
-                                </div>
-
-                                <div class="relative pt-1">
-                                    <x-tooltip :text="number_format($city->count) . ' ' . __('pageviews') . ' - ' . number_format(($city->count / $aggregates['total_count']) * 100, 1) . '% ' . __('of total traffic')">
-                                        <div class="overflow-hidden h-2 text-xs flex rounded-full bg-purple-700/30">
-                                            <div style="width: {{ ($city->count / $aggregates['total_count']) * 100 }}%"
-                                                class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r from-purple-400 to-purple-600 group-hover:from-purple-300 group-hover:to-purple-500 transition-colors duration-300 animate-pulse">
-                                            </div>
-                                        </div>
-                                    </x-tooltip>
-                                </div>
-                            </div>
-                        @endforeach
-                    </x-analytics::view>
+                        <!-- Pagination -->
+                        <x-pagination :paginator="$cities" type="compact"/>
+                    </div>
                 </div>
-                <div class="mt-6">
-                    <x-analytics::pagination :data="$data" />
-                </div>
-            @endif
-        </div>
+            </div>
+        @else
+            <div class="flex flex-col items-center justify-center py-20 bg-gradient-to-br from-slate-50 to-white dark:from-slate-900/90 dark:to-slate-800/90 rounded-2xl border border-dashed border-slate-200/60 dark:border-slate-700/60">
+                <x-icon name="heroicon-o-map" class="w-12 h-12 text-slate-400 mb-4"/>
+                <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2">{{ __('No City Data Available') }}</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('Start Monitoring To Collect Location Metrics') }}</p>
+            </div>
+        @endif
     </div>
-</x-website>
+</x-site>
+
+@pushOnce('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+@endPushOnce

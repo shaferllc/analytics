@@ -36,7 +36,7 @@ trackOutboundLinks() {
                 });
             }
         } catch (e) {
-            utils.debugLog('Invalid URL in outbound link tracking:', e);
+            utils.debugError('Invalid URL in outbound link tracking:', e);
             return;
         }
     });

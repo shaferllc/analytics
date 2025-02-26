@@ -27,7 +27,6 @@ Route::prefix('sites/{site}/analytics')->middleware(Streamline::middleware())
             'screen_resolutions' => \Shaferllc\Analytics\Livewire\ScreenResolutions::class,
             'languages' => \Shaferllc\Analytics\Livewire\Languages::class,
             'cities' => \Shaferllc\Analytics\Livewire\Cities::class,
-            'dns' => \Shaferllc\Analytics\Livewire\Dns::class,
             'countries' => \Shaferllc\Analytics\Livewire\Countries::class,
             'continents' => \Shaferllc\Analytics\Livewire\Continents::class,
             'campaigns' => \Shaferllc\Analytics\Livewire\Campaigns::class,
@@ -45,6 +44,7 @@ Route::prefix('sites/{site}/analytics')->middleware(Streamline::middleware())
             'user-agents' => \Shaferllc\Analytics\Livewire\UserAgents::class,
             'acquisitions' => \Shaferllc\Analytics\Livewire\Acquisitions::class,
             'sessions' => \Shaferllc\Analytics\Livewire\Sessions::class,
+            'debug' => \Shaferllc\Analytics\Livewire\Debug::class,
         ];
         foreach ($components as $name => $class) {
             Route::get("/{$name}/{value?}", $class)->name(Str::replace('_', '-', $name));

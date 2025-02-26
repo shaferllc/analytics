@@ -29,11 +29,11 @@ trackFileDownloads() {
                 value: downloadData
             });
 
-            utils.debugLog('File download tracked:', downloadData);
+            utils.debugInfo('File download tracked:', downloadData);
 
             // Track download success/failure
             const downloadTimeout = setTimeout(() => {
-                utils.debugLog('File download timeout or failed:', fileName);
+                utils.debugInfo('File download timeout or failed:', fileName);
             }, 5000);
 
             link.addEventListener('click', () => {

@@ -2,13 +2,14 @@
 
 namespace Shaferllc\Analytics\Livewire;
 
+use App\Models\Site;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Locked;
-use App\Models\Site;
 use Shaferllc\Analytics\Traits\ComponentTrait;
 use Shaferllc\Analytics\Traits\DateRangeTrait;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 #[Title('Screen Resolutions')]
 class ScreenResolutions extends Component
@@ -18,23 +19,45 @@ class ScreenResolutions extends Component
     #[Locked]
     public Site $site;
 
+    public $page = 0;
+
     public function render()
     {
-        $data = $this->query(
-            category: 'device_info',
-            type: 'resolution',
-            from: $this->from,
-            to: $this->to,
-            paginate: true
-        );
+        $perPage = 10000;
+
+        $data = $this->getResolutions();
+
+        $resolutions = $data['data'];
+
+        $aggregates = $data['aggregates'];
+
+        $resolutions = collect($resolutions)->sortByDesc('unique_visitors');
+
+        $offset = max(0, ($this->page - 1) * $perPage);
+
+        $items = $resolutions->slice($offset, $perPage + 1);
 
         return view('analytics::livewire.screen-resolutions', [
-            'data' => $data['data'],
-            'first' => $data['first'],
-            'last' => $data['last'],
-            'total' => $data['total'],
-            'aggregates' => $data['aggregates'],
-            'range' => $this->range,
+            'aggregates' => $aggregates,
+            'resolutions' => new LengthAwarePaginator(
+                $items,
+                $resolutions->count(),
+                $perPage,
+                $this->page
+            ),
+        ]);
+    }
+
+    private function getResolutions()
+    {
+        return $this->visitorMetaData('resolution', [
+            'viewport-width',
+            'viewport-height',
+            'device-type',
+            'color-scheme',
+            'platform',
+            'vendor',
+            'language',
         ]);
     }
 }

@@ -2,25 +2,23 @@
 
 @if($breadcrumbs)
     <nav class="flex" aria-label="Breadcrumb">
-        <ol class="inline-flex items-center">
+        <ol class="inline-flex items-center space-x-1 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm rounded-xl p-2 shadow-sm border border-slate-200/60 dark:border-slate-700/60">
             @foreach($breadcrumbs as $breadcrumb)
                 <li class="inline-flex items-center">
                     @if(!$loop->first)
-                        <div class="flex items-center">
-                            <x-icon name="heroicon-o-chevron-right" class="w-5 h-5 text-gray-500 dark:text-gray-300 mx-2 transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400" />
-                        </div>
+                        <x-icon name="heroicon-o-chevron-right" class="w-4 h-4 text-slate-400 dark:text-slate-300 mx-1.5" />
                     @endif
                     <a href="{{ $breadcrumb['url'] }}" @class([
-                        'group inline-flex items-center text-sm font-medium transition-all duration-200 rounded-full px-4 py-2',
-                        'text-gray-700 dark:text-gray-50 bg-white dark:bg-gray-600 hover:bg-gray-50 dark:hover:bg-gray-500 border border-gray-50 dark:border-gray-500' => $loop->last,
-                        'text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-50 hover:scale-105 bg-white dark:bg-gray-600 hover:bg-gray-50 dark:hover:bg-gray-500 border border-gray-50 dark:border-gray-500' => !$loop->last
+                        'inline-flex items-center text-sm font-medium transition-all duration-200 rounded-lg px-3 py-1.5',
+                        'text-white bg-gradient-to-br from-emerald-500 to-teal-500 shadow-emerald-500/20 hover:shadow-emerald-500/30 hover:scale-105 hover:bg-gradient-to-br hover:from-emerald-600 hover:to-teal-600' => $loop->last,
+                        'text-slate-600 dark:text-slate-300 hover:bg-slate-100/50 dark:hover:bg-slate-700/50 bg-slate-100/50 dark:bg-slate-700/50 hover:scale-105 transition-all duration-200 hover:shadow-slate-500/20' => !$loop->last
                     ])>
                         @if($loop->first)
-                            <x-icon name="heroicon-o-home" class="w-5 h-5 mr-2 text-gray-500 dark:text-gray-300 transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+                            <x-icon name="heroicon-o-home" class="w-4 h-4 mr-2 text-slate-400 dark:text-white" />
                         @elseif(isset($breadcrumb['icon']))
-                            <x-icon :name="$breadcrumb['icon']" class="w-5 h-5 mr-2 text-gray-500 dark:text-gray-300 transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+                            <x-icon :name="$breadcrumb['icon']" class="w-4 h-4 mr-2 text-slate-400 dark:text-white" />
                         @endif
-                        <span class="truncate max-w-[150px] md:max-w-[200px]">{{ $breadcrumb['label'] }}</span>
+                        <span class="truncate max-w-[150px] md:max-w-[200px] hover:max-w-none hover:whitespace-normal">{{ $breadcrumb['label'] }}</span>
                     </a>
                 </li>
             @endforeach

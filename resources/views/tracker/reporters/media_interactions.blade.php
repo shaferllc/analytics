@@ -66,7 +66,7 @@ trackMediaInteractions() {
                     };
 
                     this.queueRequest(mediaData);
-                    utils.debugLog('Media interaction tracked:', mediaData);
+                    utils.debugInfo('Media interaction tracked:', mediaData);
                 });
             });
         });
